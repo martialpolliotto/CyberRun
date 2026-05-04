@@ -1,0 +1,17 @@
+.git
+.gitignore
+.idea
+.vscode
+node_modules
+writable/cache/*
+writable/logs/*
+writable/session/*
+writable/uploads/*
+writable/debugbar/*
+!writable/cache/index.html
+!writable/logs/index.html
+!writable/session/index.html
+!writable/uploads/index.html
+!writable/debugbar/index.html
+*.md
+docker-compose.override.yml

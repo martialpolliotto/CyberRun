@@ -1,0 +1,58 @@
+services:
+  web:
+    build:
+      context: ./docker/web
+    container_name: cybertown_web
+    restart: unless-stopped
+    ports:
+      - "8090:80"
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - db
+    networks:
+      - cybertown
+
+  db:
+    image: mariadb:11
+    container_name: cybertown_db
+    restart: unless-stopped
+    ports:
+      - "33060:3306"
+    environment:
+      MARIADB_ROOT_PASSWORD: cybertown_root
+      MARIADB_DATABASE: cybertown
+      MARIADB_USER: cybertown
+      MARIADB_PASSWORD: cybertown_dev
+    volumes:
+      - cybertown_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - cybertown
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    container_name: cybertown_pma
+    restart: unless-stopped
+    ports:
+      - "8091:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 100M
+    depends_on:
+      - db
+    networks:
+      - cybertown
+
+volumes:
+  cybertown_db_data:
+
+networks:
+  cybertown:
+    driver: bridge

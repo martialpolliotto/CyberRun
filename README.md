@@ -4,23 +4,68 @@ Jeu navigateur PvP cyberpunk en français, dans la lignée des MMO textuels type
 
 ## Stack
 
-- **Backend** : PHP 8.2+ / CodeIgniter 4
-- **Front** : HTMX + Alpine.js + Tailwind CSS (via CDN au démarrage)
-- **DB** : MySQL 8
-- **Hébergement** : VPS
+- **Backend** : PHP 8.2 / CodeIgniter 4
+- **Front** : HTMX + Alpine.js + Tailwind CSS (CDN au démarrage)
+- **DB** : MariaDB 11
+- **Infra dev** : Docker (Apache + mod_php, MariaDB, phpMyAdmin)
+- **Hébergement prod** : VPS
 
-## Installation locale (dev)
+## Installation locale
+
+### Prérequis
+
+- Docker + Docker Compose
+- Git
+
+### Démarrage
 
 ```bash
 git clone https://github.com/martialpolliotto/CyberTown.git
-cd cybertown
-composer install
-cp env .env
-# Editer .env : CI_ENVIRONMENT=development, database, baseURL...
-php spark serve
+cd CyberTown
+cp env .env   # puis ajuster (voir section .env ci-dessous)
+docker compose up -d --build
+docker compose exec web composer install
 ```
 
-Ouvrir <http://localhost:8080>.
+### URLs locales
+
+| Service     | URL                       |
+|-------------|---------------------------|
+| Application | http://localhost:8090     |
+| phpMyAdmin  | http://localhost:8091     |
+| MariaDB     | `localhost:33060` (host) ou `db:3306` (réseau Docker) |
+
+### Credentials BDD (dev local uniquement)
+
+- Base : `cybertown`
+- User : `cybertown` / `cybertown_dev`
+- Root : `cybertown_root`
+
+### .env
+
+Le `.env` doit pointer vers le service Docker `db` :
+
+```ini
+CI_ENVIRONMENT = development
+app.baseURL = 'http://localhost:8090/'
+
+database.default.hostname = db
+database.default.database = cybertown
+database.default.username = cybertown
+database.default.password = cybertown_dev
+database.default.DBDriver = MySQLi
+database.default.port = 3306
+```
+
+### Commandes utiles
+
+```bash
+docker compose logs -f web        # suivre les logs Apache/PHP
+docker compose exec web bash      # shell dans le container web
+docker compose exec web php spark migrate   # lancer les migrations
+docker compose down               # arrêter le stack
+docker compose down -v            # arrêter + supprimer les données BDD
+```
 
 ## Périmètre MVP
 
