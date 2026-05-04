@@ -1,4 +1,4 @@
-# CyberTown
+# CyberRun
 
 Jeu navigateur PvP cyberpunk en français, dans la lignée des MMO textuels type Torn.com.
 
@@ -20,8 +20,8 @@ Jeu navigateur PvP cyberpunk en français, dans la lignée des MMO textuels type
 ### Démarrage
 
 ```bash
-git clone https://github.com/martialpolliotto/CyberTown.git
-cd CyberTown
+git clone https://github.com/martialpolliotto/CyberRun.git
+cd CyberRun
 cp env .env   # puis ajuster (voir section .env ci-dessous)
 docker compose up -d --build
 docker compose exec web composer install
@@ -37,9 +37,9 @@ docker compose exec web composer install
 
 ### Credentials BDD (dev local uniquement)
 
-- Base : `cybertown`
-- User : `cybertown` / `cybertown_dev`
-- Root : `cybertown_root`
+- Base : `cyberrun`
+- User : `cyberrun` / `cyberrun_dev`
+- Root : `cyberrun_root`
 
 ### .env
 
@@ -50,9 +50,9 @@ CI_ENVIRONMENT = development
 app.baseURL = 'http://localhost:8090/'
 
 database.default.hostname = db
-database.default.database = cybertown
-database.default.username = cybertown
-database.default.password = cybertown_dev
+database.default.database = cyberrun
+database.default.username = cyberrun
+database.default.password = cyberrun_dev
 database.default.DBDriver = MySQLi
 database.default.port = 3306
 ```

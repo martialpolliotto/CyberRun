@@ -2,7 +2,7 @@ services:
   web:
     build:
       context: ./docker/web
-    container_name: cybertown_web
+    container_name: cyberrun_web
     restart: unless-stopped
     ports:
       - "8090:80"
@@ -11,21 +11,21 @@ services:
     depends_on:
       - db
     networks:
-      - cybertown
+      - cyberrun
 
   db:
     image: mariadb:11
-    container_name: cybertown_db
+    container_name: cyberrun_db
     restart: unless-stopped
     ports:
       - "33060:3306"
     environment:
-      MARIADB_ROOT_PASSWORD: cybertown_root
-      MARIADB_DATABASE: cybertown
-      MARIADB_USER: cybertown
-      MARIADB_PASSWORD: cybertown_dev
+      MARIADB_ROOT_PASSWORD: cyberrun_root
+      MARIADB_DATABASE: cyberrun
+      MARIADB_USER: cyberrun
+      MARIADB_PASSWORD: cyberrun_dev
     volumes:
-      - cybertown_db_data:/var/lib/mysql
+      - cyberrun_db_data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
@@ -33,11 +33,11 @@ services:
       retries: 10
       start_period: 20s
     networks:
-      - cybertown
+      - cyberrun
 
   phpmyadmin:
     image: phpmyadmin:5
-    container_name: cybertown_pma
+    container_name: cyberrun_pma
     restart: unless-stopped
     ports:
       - "8091:80"
@@ -48,11 +48,11 @@ services:
     depends_on:
       - db
     networks:
-      - cybertown
+      - cyberrun
 
 volumes:
-  cybertown_db_data:
+  cyberrun_db_data:
 
 networks:
-  cybertown:
+  cyberrun:
     driver: bridge

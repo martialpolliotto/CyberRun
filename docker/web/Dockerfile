@@ -25,6 +25,6 @@ RUN { \
         echo "upload_max_filesize = 32M"; \
         echo "post_max_size = 32M"; \
         echo "date.timezone = Europe/Paris"; \
-    } > /usr/local/etc/php/conf.d/zz-cybertown.ini
+    } > /usr/local/etc/php/conf.d/zz-cyberrun.ini
 
 WORKDIR /var/www/html

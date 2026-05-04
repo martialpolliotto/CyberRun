@@ -7,7 +7,7 @@
     <div class="mb-8" x-data="{ glitch: false }" x-init="setInterval(() => { glitch = true; setTimeout(() => glitch = false, 120) }, 4000)">
         <h1 class="text-5xl md:text-7xl font-bold text-neon-pink tracking-tight"
             :class="glitch ? 'opacity-70 translate-x-[2px]' : ''">
-            CyberTown
+            CyberRun
         </h1>
         <p class="mt-3 text-neon-cyan/80 text-sm md:text-base">
             // Le réseau t'attend, runner.
