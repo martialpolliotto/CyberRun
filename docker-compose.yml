@@ -2,6 +2,7 @@ services:
   web:
     build:
       context: ./docker/web
+    image: cyberrun-web
     container_name: cyberrun_web
     restart: unless-stopped
     ports:
@@ -10,6 +11,21 @@ services:
       - ./:/var/www/html
     depends_on:
       - db
+    networks:
+      - cyberrun
+
+  cron:
+    image: cyberrun-web
+    container_name: cyberrun_cron
+    restart: unless-stopped
+    # Boucle simple : tick toutes les 60s. Tolere une derive de quelques secondes.
+    command: ["sh", "-c", "echo '[cron] starting CyberRun tick loop'; while true; do php spark cyberrun:tick || true; sleep 60; done"]
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - db
+      - web
     networks:
       - cyberrun
 
