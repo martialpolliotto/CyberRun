@@ -8,10 +8,10 @@
  */
 
 $labels = [
-    'force'    => 'FRC',
-    'blindage' => 'BLI',
-    'reflexes' => 'RFX',
-    'hack'     => 'HCK',
+    'force'    => 'Force',
+    'blindage' => 'Blindage',
+    'reflexes' => 'Réflexes',
+    'hack'     => 'Hack',
 ];
 
 if (isset($item)) {
