@@ -24,10 +24,15 @@ class Equipment extends BaseController
 
         $inventory = $piModel->findFullInventory((int) $player['id']);
 
-        // Regroupement : equipped[slot] = 1 item, available[slot][] = items disponibles non équipés
+        // 3 buckets : equipped (slot=>item), available (slot=>items[]), obsolete (items[] hors-circuit)
         $equipped  = [];
         $available = [];
+        $obsolete  = [];
         foreach ($inventory as $row) {
+            if ((int) $row['item_discontinued'] === 1) {
+                $obsolete[] = $row;
+                continue;
+            }
             $slot = $row['item_slot'];
             if ((int) $row['equipped'] === 1) {
                 $equipped[$slot] = $row;
@@ -42,6 +47,7 @@ class Equipment extends BaseController
             'slots'     => ItemModel::SLOTS,
             'equipped'  => $equipped,
             'available' => $available,
+            'obsolete'  => $obsolete,
             'stats'     => $playerModel->getEffectiveStats((int) $player['id']),
         ]);
     }

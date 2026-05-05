@@ -21,7 +21,7 @@ class PlayerItemModel extends Model
      */
     public function findFullInventory(int $playerId): array
     {
-        return $this->select('player_items.*, items.slug AS item_slug, items.name AS item_name, items.slot AS item_slot, items.description AS item_description, items.bonus_force, items.bonus_blindage, items.bonus_reflexes, items.bonus_hack')
+        return $this->select('player_items.*, items.slug AS item_slug, items.name AS item_name, items.slot AS item_slot, items.description AS item_description, items.bonus_force, items.bonus_blindage, items.bonus_reflexes, items.bonus_hack, items.discontinued AS item_discontinued, items.image_path, items.model_path')
             ->join('items', 'items.id = player_items.item_id', 'inner')
             ->where('player_items.player_id', $playerId)
             ->orderBy('items.slot')
@@ -67,7 +67,7 @@ class PlayerItemModel extends Model
      */
     public function equip(int $playerId, int $playerItemId): array
     {
-        $row = $this->select('player_items.*, items.slot AS item_slot, items.name AS item_name')
+        $row = $this->select('player_items.*, items.slot AS item_slot, items.name AS item_name, items.discontinued AS item_discontinued')
             ->join('items', 'items.id = player_items.item_id', 'inner')
             ->where('player_items.id', $playerItemId)
             ->where('player_items.player_id', $playerId)
@@ -75,6 +75,9 @@ class PlayerItemModel extends Model
 
         if ($row === null) {
             return ['ok' => false, 'message' => 'Item introuvable dans ton inventaire.'];
+        }
+        if ((int) $row['item_discontinued'] === 1) {
+            return ['ok' => false, 'message' => 'Cet item est hors-circuit, impossible de l\'équiper.'];
         }
 
         $db = $this->db;

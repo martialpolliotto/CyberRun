@@ -110,6 +110,24 @@
         <?php endif ?>
     </div>
 
+    <!-- Cache obsolète : items hors-circuit (read-only) -->
+    <?php if (! empty($obsolete)): ?>
+        <div>
+            <p class="text-xs text-warning/80 mb-2 uppercase tracking-wider">&gt; CACHE_OBSOLÈTE <span class="text-warning/40">(items hors-circuit, ne peuvent plus être équipés)</span></p>
+            <div class="space-y-2">
+                <?php foreach ($obsolete as $it): ?>
+                    <div class="flex items-center justify-between border border-warning/30 bg-warning/5 p-2 opacity-80">
+                        <div>
+                            <p class="text-warning/80 text-sm font-bold"><?= esc($it['item_name']) ?></p>
+                            <p class="text-xs text-primary/50"><?= view('partials/bonus_inline', ['item' => $it]) ?></p>
+                        </div>
+                        <span class="text-xs text-warning/60 italic uppercase tracking-wider">hors-circuit</span>
+                    </div>
+                <?php endforeach ?>
+            </div>
+        </div>
+    <?php endif ?>
+
 </div>
 
 <?= $this->endSection() ?>

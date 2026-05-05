@@ -10,6 +10,10 @@
         <a href="/lab" class="hover:text-white transition">Lab</a>
         <span class="text-primary/40">|</span>
         <a href="/equipment" class="hover:text-white transition">Équipement</a>
+        <?php if (auth()->user()->inGroup('admin', 'superadmin')): ?>
+            <span class="text-primary/40">|</span>
+            <a href="/admin" class="text-warning hover:text-orange-300 transition">[ADMIN]</a>
+        <?php endif ?>
         <span class="text-primary/40">|</span>
         <span class="text-accent"><?= esc(auth()->user()->username) ?></span>
         <a href="/logout" class="text-danger hover:text-red-300 transition">[déconnexion]</a>
