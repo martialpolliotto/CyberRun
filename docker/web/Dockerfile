@@ -2,6 +2,12 @@ FROM php:8.2-apache
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Aligne l'UID/GID de www-data avec l'utilisateur du host (typiquement 1000:1000 sur WSL/Linux dev).
+# Evite les conflits de permission sur le volume monte (writable/, vendor/...).
+ARG WWWUSER=1000
+ARG WWWGROUP=1000
+RUN groupmod -g ${WWWGROUP} www-data && usermod -u ${WWWUSER} -g ${WWWGROUP} www-data
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libicu-dev \
         libonig-dev \
