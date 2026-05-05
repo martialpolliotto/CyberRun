@@ -49,6 +49,58 @@ class PlayerModel extends Model
     }
 
     /**
+     * Calcule les stats effectives (base + bonus des items équipés).
+     *
+     * @return array{
+     *   base: array{force:int,blindage:int,reflexes:int,hack:int},
+     *   bonus: array{force:int,blindage:int,reflexes:int,hack:int},
+     *   total: array{force:int,blindage:int,reflexes:int,hack:int}
+     * }
+     */
+    public function getEffectiveStats(int $playerId): array
+    {
+        $player = $this->find($playerId);
+        if ($player === null) {
+            $zero = ['force' => 0, 'blindage' => 0, 'reflexes' => 0, 'hack' => 0];
+            return ['base' => $zero, 'bonus' => $zero, 'total' => $zero];
+        }
+
+        $base = [
+            'force'    => (int) $player['stat_force'],
+            'blindage' => (int) $player['stat_blindage'],
+            'reflexes' => (int) $player['stat_reflexes'],
+            'hack'     => (int) $player['stat_hack'],
+        ];
+
+        // NB: "force" est un mot réservé MariaDB → on utilise des alias prefixés.
+        $row = $this->db->query(
+            'SELECT
+                COALESCE(SUM(i.bonus_force), 0)    AS bf,
+                COALESCE(SUM(i.bonus_blindage), 0) AS bb,
+                COALESCE(SUM(i.bonus_reflexes), 0) AS br,
+                COALESCE(SUM(i.bonus_hack), 0)     AS bh
+             FROM player_items pi
+             JOIN items i ON i.id = pi.item_id
+             WHERE pi.player_id = ? AND pi.equipped = 1',
+            [$playerId],
+        )->getRow();
+
+        $bonus = [
+            'force'    => (int) ($row->bf ?? 0),
+            'blindage' => (int) ($row->bb ?? 0),
+            'reflexes' => (int) ($row->br ?? 0),
+            'hack'     => (int) ($row->bh ?? 0),
+        ];
+
+        $total = [];
+        foreach ($base as $k => $v) {
+            $total[$k] = $v + $bonus[$k];
+        }
+
+        return ['base' => $base, 'bonus' => $bonus, 'total' => $total];
+    }
+
+    /**
      * Tente un entraînement de stat pour un player.
      *
      * Effectue les vérifs (slug stat valide, énergie suffisante, pas en cyberclinique)

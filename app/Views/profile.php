@@ -4,11 +4,12 @@
     helper('number');
     $xpPct = (int) round(($player['xp'] / max(1, $xpToNext)) * 100);
 
-    $stats = [
-        'Force'    => $player['stat_force'],
-        'Blindage' => $player['stat_blindage'],
-        'Réflexes' => $player['stat_reflexes'],
-        'Hack'     => $player['stat_hack'],
+    // $stats vient du controller : ['base' => [...], 'bonus' => [...], 'total' => [...]]
+    $statLabels = [
+        'force'    => 'Force',
+        'blindage' => 'Blindage',
+        'reflexes' => 'Réflexes',
+        'hack'     => 'Hack',
     ];
 ?>
 
@@ -43,13 +44,22 @@
         <?= view('partials/resource_bar', ['label' => 'Nerve',   'current' => $player['nerve_current'],  'max' => $player['nerve_max'],  'color' => 'nerve']) ?>
     </div>
 
-    <!-- Stats -->
+    <!-- Stats (base + bonus equipement = total) -->
     <div>
         <p class="text-xs text-primary/60 mb-2 uppercase tracking-wider">&gt; STATS_COMBAT</p>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <?php foreach ($stats as $label => $value): ?>
-                <?= view('partials/stat_card', ['label' => $label, 'value' => $value]) ?>
-            <?php endforeach; ?>
+            <?php foreach ($statLabels as $key => $label): ?>
+                <div class="border border-primary/30 bg-black/40 p-3 text-center hover:border-accent/60 transition">
+                    <p class="text-primary/70 text-xs uppercase tracking-wider"><?= esc($label) ?></p>
+                    <p class="text-3xl text-white font-bold mt-1"><?= number_format($stats['total'][$key]) ?></p>
+                    <?php if ($stats['bonus'][$key] > 0): ?>
+                        <p class="text-xs text-primary/60 mt-1">
+                            <?= $stats['base'][$key] ?>
+                            <span class="text-success">+ <?= $stats['bonus'][$key] ?></span>
+                        </p>
+                    <?php endif ?>
+                </div>
+            <?php endforeach ?>
         </div>
     </div>
 

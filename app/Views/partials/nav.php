@@ -9,6 +9,8 @@
         <span class="text-primary/40">|</span>
         <a href="/lab" class="hover:text-white transition">Lab</a>
         <span class="text-primary/40">|</span>
+        <a href="/equipment" class="hover:text-white transition">Équipement</a>
+        <span class="text-primary/40">|</span>
         <span class="text-accent"><?= esc(auth()->user()->username) ?></span>
         <a href="/logout" class="text-danger hover:text-red-300 transition">[déconnexion]</a>
     <?php else: ?>
