@@ -69,6 +69,29 @@
         </div>
 
         <div class="border border-primary/40 bg-primary/5 p-4 space-y-3">
+            <p class="text-xs text-primary/60 uppercase tracking-wider">&gt; VENTE</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <label class="block">
+                    <span class="block text-xs text-primary/70 uppercase tracking-wider mb-1">Marchand</span>
+                    <select name="vendor_id" class="w-full bg-surface-alt border border-primary/40 text-primary px-3 py-2 focus:border-accent focus:outline-none rounded">
+                        <option value="">— aucun (loot, quête...) —</option>
+                        <?php
+                            $allVendors = model(\App\Models\VendorModel::class)->listAll();
+                            $currentVendorId = (int) $val('vendor_id', 0);
+                        ?>
+                        <?php foreach ($allVendors as $vd): ?>
+                            <option value="<?= (int) $vd['id'] ?>" <?= $currentVendorId === (int) $vd['id'] ? 'selected' : '' ?>><?= esc($vd['name']) ?></option>
+                        <?php endforeach ?>
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="block text-xs text-primary/70 uppercase tracking-wider mb-1">Prix (crédits, 0 = pas en vente)</span>
+                    <input type="number" name="price" min="0" value="<?= (int) $val('price', 0) ?>" class="w-full bg-surface-alt border border-primary/40 text-primary px-3 py-2 focus:border-accent focus:outline-none rounded">
+                </label>
+            </div>
+        </div>
+
+        <div class="border border-primary/40 bg-primary/5 p-4 space-y-3">
             <p class="text-xs text-primary/60 uppercase tracking-wider">&gt; BONUS_STATS</p>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <?php foreach ([

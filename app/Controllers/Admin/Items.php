@@ -76,6 +76,8 @@ class Items extends BaseController
             'bonus_reflexes' => (int) $this->request->getPost('bonus_reflexes'),
             'bonus_hack'     => (int) $this->request->getPost('bonus_hack'),
             'starter'        => $this->request->getPost('starter') ? 1 : 0,
+            'vendor_id'      => $this->request->getPost('vendor_id') !== '' ? (int) $this->request->getPost('vendor_id') : null,
+            'price'          => max(0, (int) $this->request->getPost('price')),
         ];
 
         // Validation manuelle simple (on évitera CI4 Validation pour MVP).

@@ -13,6 +13,7 @@ class ItemModel extends Model
 
     protected $allowedFields = [
         'slug', 'name', 'description', 'slot',
+        'vendor_id', 'price',
         'bonus_force', 'bonus_blindage', 'bonus_reflexes', 'bonus_hack',
         'starter',
         'discontinued', 'discontinued_at',

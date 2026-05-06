@@ -18,6 +18,10 @@ $routes->group('', ['filter' => 'session'], static function ($routes) {
     $routes->get('equipment', 'Equipment::index');
     $routes->post('equipment/equip/(:num)', 'Equipment::equip/$1');
     $routes->post('equipment/unequip/(:segment)', 'Equipment::unequip/$1');
+
+    $routes->get('shops', 'Shops::index');
+    $routes->get('shop/(:segment)', 'Shops::show/$1');
+    $routes->post('shop/(:segment)/buy/(:num)', 'Shops::buy/$1/$2');
 });
 
 // Zone admin : double filter (session + appartenance au groupe "admin").
@@ -32,4 +36,8 @@ $routes->group('admin', ['filter' => ['session', 'group:admin'], 'namespace' => 
     $routes->post('items/(:num)/discontinue', 'Items::discontinue/$1');
     $routes->post('items/(:num)/restore',     'Items::restore/$1');
     $routes->post('items/(:num)/destroy',     'Items::destroy/$1');
+
+    $routes->get('vendors',                'Vendors::index');
+    $routes->get('vendors/(:num)/edit',    'Vendors::edit/$1');
+    $routes->post('vendors/(:num)/save',   'Vendors::save/$1');
 });
