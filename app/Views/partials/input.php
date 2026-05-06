@@ -29,6 +29,6 @@ $placeholder = $placeholder ?? null;
         <?php if ($autocomplete !== null): ?>autocomplete="<?= esc($autocomplete) ?>"<?php endif ?>
         <?php if ($inputmode   !== null): ?>inputmode="<?= esc($inputmode) ?>"<?php endif ?>
         <?php if ($placeholder !== null): ?>placeholder="<?= esc($placeholder) ?>"<?php endif ?>
-        class="w-full bg-black/60 border border-primary/40 text-white px-3 py-2 focus:border-accent focus:outline-none placeholder:text-primary/30 transition font-mono"
+        class="w-full bg-surface-alt border border-line text-primary px-3 py-2 focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none placeholder:text-muted/60 transition rounded"
     >
 </label>

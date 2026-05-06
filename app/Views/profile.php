@@ -21,13 +21,13 @@
     <?php
         $identitySlot = '<h1 class="text-3xl md:text-4xl font-bold text-accent">' . esc($user->username) . '</h1>'
             . '<div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">'
-            .   '<span class="text-primary">Niveau <span class="text-white font-bold">' . (int) $player['level'] . '</span></span>'
+            .   '<span class="text-primary">Niveau <span class="text-primary font-bold">' . (int) $player['level'] . '</span></span>'
             .   '<span class="text-primary/60">XP ' . number_format($player['xp']) . ' / ' . number_format($xpToNext) . '</span>'
             .   (! empty($player['in_hospital_until'])
                     ? '<span class="text-danger">[ EN CYBERCLINIQUE ]</span>'
                     : '')
             . '</div>'
-            . '<div class="h-1 bg-black/40 mt-2">'
+            . '<div class="h-1 bg-surface-alt mt-2">'
             .   '<div class="h-full bg-xp" style="width: ' . $xpPct . '%"></div>'
             . '</div>';
     ?>
@@ -49,9 +49,9 @@
         <p class="text-xs text-primary/60 mb-2 uppercase tracking-wider">&gt; STATS_COMBAT</p>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <?php foreach ($statLabels as $key => $label): ?>
-                <div class="border border-primary/30 bg-black/40 p-3 text-center hover:border-accent/60 transition">
+                <div class="border border-primary/30 bg-surface-alt p-3 text-center hover:border-accent/60 transition">
                     <p class="text-primary/70 text-xs uppercase tracking-wider"><?= esc($label) ?></p>
-                    <p class="text-3xl text-white font-bold mt-1"><?= number_format($stats['total'][$key]) ?></p>
+                    <p class="text-3xl text-primary font-bold mt-1"><?= number_format($stats['total'][$key]) ?></p>
                     <?php if ($stats['bonus'][$key] > 0): ?>
                         <p class="text-xs text-primary/60 mt-1">
                             <?= $stats['base'][$key] ?>

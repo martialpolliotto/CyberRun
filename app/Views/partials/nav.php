@@ -5,11 +5,11 @@
 ?>
 <nav class="space-x-4 text-sm">
     <?php if (function_exists('auth') && auth()->loggedIn()): ?>
-        <a href="/profile" class="hover:text-white transition">Profil</a>
+        <a href="/profile" class="hover:text-accent transition">Profil</a>
         <span class="text-primary/40">|</span>
-        <a href="/lab" class="hover:text-white transition">Lab</a>
+        <a href="/lab" class="hover:text-accent transition">Lab</a>
         <span class="text-primary/40">|</span>
-        <a href="/equipment" class="hover:text-white transition">Équipement</a>
+        <a href="/equipment" class="hover:text-accent transition">Équipement</a>
         <?php if (auth()->user()->inGroup('admin', 'superadmin')): ?>
             <span class="text-primary/40">|</span>
             <a href="/admin" class="text-warning hover:text-orange-300 transition">[ADMIN]</a>
@@ -18,9 +18,9 @@
         <span class="text-accent"><?= esc(auth()->user()->username) ?></span>
         <a href="/logout" class="text-danger hover:text-red-300 transition">[déconnexion]</a>
     <?php else: ?>
-        <a href="/" class="hover:text-white transition">Accueil</a>
+        <a href="/" class="hover:text-accent transition">Accueil</a>
         <span class="text-primary/40">|</span>
-        <a href="/login" class="hover:text-white transition">Connexion</a>
+        <a href="/login" class="hover:text-accent transition">Connexion</a>
         <span class="text-primary/40">|</span>
         <a href="/register" class="text-accent hover:text-pink-300 transition">Inscription</a>
     <?php endif; ?>

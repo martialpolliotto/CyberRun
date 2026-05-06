@@ -60,11 +60,11 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <?php foreach ($statLabels as $slug => $label): ?>
             <?php $value = (int) $player[$statColumns[$slug]]; ?>
-            <div class="border border-primary/30 bg-black/40 p-4 hover:border-accent/60 transition">
+            <div class="border border-primary/30 bg-surface-alt p-4 hover:border-accent/60 transition">
                 <div class="flex items-center justify-between mb-3">
                     <div>
                         <p class="text-primary/70 text-xs uppercase tracking-wider"><?= esc($label) ?></p>
-                        <p class="text-3xl text-white font-bold"><?= number_format($value) ?></p>
+                        <p class="text-3xl text-primary font-bold"><?= number_format($value) ?></p>
                     </div>
                     <p class="text-success text-xs">+<?= $gain ?> par session</p>
                 </div>
@@ -75,8 +75,8 @@
                             <?= $canTrain ? '' : 'disabled' ?>
                             class="w-full px-3 py-2 border font-bold uppercase tracking-wider text-sm transition <?php
                                 echo $canTrain
-                                    ? 'bg-accent text-white border-accent hover:bg-pink-600 cursor-pointer'
-                                    : 'bg-black/30 text-primary/30 border-primary/20 cursor-not-allowed';
+                                    ? 'bg-accent text-white border-accent hover:bg-sky-800 cursor-pointer'
+                                    : 'bg-surface-alt text-primary/30 border-primary/20 cursor-not-allowed';
                             ?>">
                         <?php if ($canTrain): ?>
                             Entraîner (-<?= $cost ?> NRG)

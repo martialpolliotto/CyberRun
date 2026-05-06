@@ -10,32 +10,35 @@
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // ----- Theme tokens CyberRun -----
-        // Changer ces 4 valeurs = changer tout l'aspect visuel du site.
+        // ----- Theme tokens CyberRun (sober Torn-like) -----
+        // Changer ces tokens = changer toute l'identite visuelle.
         // Les couleurs "role" plus bas sont liees au gameplay (HP rouge, etc.) et restent stables.
         const THEME = {
-            surface: '#000000',  // fond
-            primary: '#22d3ee',  // accent principal (cyan neon)
-            accent:  '#ec4899',  // identite forte (pink neon, titres)
-            muted:   '#155e75',  // text secondaire / borders soft
+            surface:  '#f5f5f4',  // page bg (stone-100, blanc cassé)
+            'surface-alt': '#ffffff',  // cartes, blocs
+            primary:  '#1f2937',  // text dominant (slate-800)
+            accent:   '#0369a1',  // liens / actions importantes (sky-700)
+            muted:    '#6b7280',  // text secondaire (gray-500)
+            line:     '#d1d5db',  // borders (gray-300)
         };
         // ----- Couleurs semantiques (role-based, stables) -----
         const ROLES = {
-            hp:      '#ef4444',
-            energy:  '#22d3ee',
-            nerve:   '#eab308',
-            xp:      '#22c55e',
-            credits: '#eab308',
-            danger:  '#ef4444',
-            warning: '#eab308',
-            success: '#22c55e',
-            info:    '#22d3ee',
+            hp:      '#dc2626',  // red-600
+            energy:  '#0284c7',  // sky-600
+            nerve:   '#ca8a04',  // yellow-600
+            xp:      '#16a34a',  // green-600
+            credits: '#ca8a04',
+            danger:  '#dc2626',
+            warning: '#d97706',  // amber-600
+            success: '#16a34a',
+            info:    '#0284c7',
         };
 
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
                         mono: ['"JetBrains Mono"', '"Fira Code"', 'Consolas', 'monospace'],
                     },
                     colors: { ...THEME, ...ROLES },
@@ -44,25 +47,15 @@
         };
     </script>
     <style>
-        body { font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace; }
-        /* Effet scanlines CRT — utilise la couleur primary via CSS var pour rester themable */
-        :root { --scanline-color: 34, 211, 238; }
-        .scanlines::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background: repeating-linear-gradient(0deg, rgba(var(--scanline-color), 0.03) 0px, rgba(var(--scanline-color), 0.03) 1px, transparent 1px, transparent 3px);
-            pointer-events: none;
-            z-index: 50;
-        }
+        body { font-family: Inter, system-ui, sans-serif; }
     </style>
 </head>
-<body class="bg-surface text-primary min-h-screen scanlines">
+<body class="bg-surface text-primary min-h-screen">
 
-<header class="border-b border-primary/30 bg-surface/80 backdrop-blur sticky top-0 z-40">
+<header class="border-b border-line bg-surface-alt sticky top-0 z-40 shadow-sm">
     <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-        <a href="/" class="text-xl font-bold text-accent hover:text-pink-300 transition">
-            [ CyberRun ]
+        <a href="/" class="text-lg font-bold text-accent hover:text-sky-900 transition">
+            CyberRun
         </a>
         <?= view('partials/nav') ?>
     </div>
@@ -72,8 +65,8 @@
     <?= $this->renderSection('content') ?>
 </main>
 
-<footer class="border-t border-primary/30 mt-16">
-    <div class="container mx-auto px-4 py-4 text-center text-xs text-primary/60">
+<footer class="border-t border-line mt-16 bg-surface-alt">
+    <div class="container mx-auto px-4 py-4 text-center text-xs text-muted">
         © 2026 CyberRun — projet en cours de construction
     </div>
 </footer>

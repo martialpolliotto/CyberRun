@@ -32,9 +32,9 @@
                 $statLabels = ['force' => 'Force', 'blindage' => 'Blindage', 'reflexes' => 'Réflexes', 'hack' => 'Hack'];
             ?>
             <?php foreach ($statLabels as $key => $label): ?>
-                <div class="border border-primary/30 bg-black/40 p-3 text-center">
+                <div class="border border-primary/30 bg-surface-alt p-3 text-center">
                     <p class="text-primary/70 text-xs uppercase tracking-wider"><?= $label ?></p>
-                    <p class="text-3xl text-white font-bold mt-1"><?= $stats['total'][$key] ?></p>
+                    <p class="text-3xl text-primary font-bold mt-1"><?= $stats['total'][$key] ?></p>
                     <p class="text-xs text-primary/60 mt-1">
                         <?= $stats['base'][$key] ?>
                         <?php if ($stats['bonus'][$key] > 0): ?>
@@ -52,7 +52,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <?php foreach ($slots as $slotKey => $slotLabel): ?>
                 <?php $eq = $equipped[$slotKey] ?? null; ?>
-                <div class="border border-primary/30 bg-black/40 p-3">
+                <div class="border border-primary/30 bg-surface-alt p-3">
                     <div class="flex items-baseline justify-between">
                         <p class="text-primary/70 text-xs uppercase tracking-wider"><?= $slotLabel ?></p>
                         <?php if ($eq): ?>
@@ -63,7 +63,7 @@
                         <?php endif ?>
                     </div>
                     <?php if ($eq): ?>
-                        <p class="text-white font-bold mt-1"><?= esc($eq['item_name']) ?></p>
+                        <p class="text-primary font-bold mt-1"><?= esc($eq['item_name']) ?></p>
                         <p class="text-xs mt-1"><?= view('partials/bonus_inline', ['item' => $eq]) ?></p>
                         <?php if (! empty($eq['item_description'])): ?>
                             <p class="text-primary/50 text-xs italic mt-2">// <?= esc($eq['item_description']) ?></p>
@@ -90,14 +90,14 @@
                         <p class="text-primary/60 text-xs uppercase tracking-wider mb-1"><?= $slotLabel ?></p>
                         <div class="space-y-2">
                             <?php foreach ($items as $it): ?>
-                                <div class="flex items-center justify-between border border-primary/20 bg-black/30 p-2">
+                                <div class="flex items-center justify-between border border-primary/20 bg-surface-alt p-2">
                                     <div>
-                                        <p class="text-white text-sm font-bold"><?= esc($it['item_name']) ?></p>
+                                        <p class="text-primary text-sm font-bold"><?= esc($it['item_name']) ?></p>
                                         <p class="text-xs"><?= view('partials/bonus_inline', ['item' => $it]) ?></p>
                                     </div>
                                     <form method="post" action="/equipment/equip/<?= (int) $it['id'] ?>" class="inline">
                                         <?= csrf_field() ?>
-                                        <button type="submit" class="px-3 py-1 border border-accent/60 text-accent hover:bg-accent hover:text-white transition text-xs uppercase tracking-wider">
+                                        <button type="submit" class="px-3 py-1 border border-accent/60 text-accent hover:bg-accent hover:text-accent transition text-xs uppercase tracking-wider">
                                             Équiper
                                         </button>
                                     </form>

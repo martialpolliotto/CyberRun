@@ -11,7 +11,7 @@
 
     <div class="flex items-end justify-between flex-wrap gap-2">
         <h1 class="text-3xl md:text-4xl font-bold text-warning">&gt; ITEMS</h1>
-        <a href="/admin/items/new" class="px-4 py-2 border border-accent bg-accent text-white font-bold uppercase tracking-wider hover:bg-pink-600 transition">
+        <a href="/admin/items/new" class="px-4 py-2 border border-accent bg-accent text-white font-bold uppercase tracking-wider hover:bg-sky-800 transition">
             + Nouvel item
         </a>
     </div>
@@ -39,7 +39,7 @@
             <tbody>
                 <?php foreach ($items as $it): ?>
                     <tr class="border-t border-primary/10 hover:bg-primary/5 <?= $it['discontinued'] ? 'opacity-60' : '' ?>">
-                        <td class="p-2 text-white"><?= esc($it['name']) ?> <span class="text-primary/40 text-xs">(<?= esc($it['slug']) ?>)</span></td>
+                        <td class="p-2 text-primary"><?= esc($it['name']) ?> <span class="text-primary/40 text-xs">(<?= esc($it['slug']) ?>)</span></td>
                         <td class="p-2 text-primary/80"><?= esc($slots[$it['slot']] ?? $it['slot']) ?></td>
                         <td class="p-2"><?= view('partials/bonus_inline', ['item' => $it]) ?></td>
                         <td class="p-2 text-center">
@@ -54,7 +54,7 @@
                             <?php endif ?>
                         </td>
                         <td class="p-2 text-right">
-                            <a href="/admin/items/<?= (int) $it['id'] ?>/edit" class="text-accent hover:text-pink-300 transition">[éditer]</a>
+                            <a href="/admin/items/<?= (int) $it['id'] ?>/edit" class="text-accent hover:text-sky-900 transition">[éditer]</a>
                         </td>
                     </tr>
                 <?php endforeach ?>

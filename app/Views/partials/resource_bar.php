@@ -22,12 +22,12 @@ $colorClasses = match ($color) {
     default   => ['border' => 'border-primary/40', 'bg' => 'bg-primary/5',  'text' => 'text-primary', 'fill' => 'bg-primary'],
 };
 ?>
-<div class="border <?= $colorClasses['border'] ?> <?= $colorClasses['bg'] ?> p-3">
+<div class="border <?= $colorClasses['border'] ?> bg-surface-alt rounded p-3">
     <div class="flex justify-between items-baseline">
         <span class="<?= $colorClasses['text'] ?> text-sm font-bold"><?= esc($label) ?></span>
         <span class="<?= $colorClasses['text'] ?> text-xs"><?= number_format($current) ?> / <?= number_format($max) ?></span>
     </div>
-    <div class="h-2 bg-black/50 mt-2 border <?= $colorClasses['border'] ?>">
+    <div class="h-2 bg-stone-200 mt-2 rounded overflow-hidden">
         <div class="h-full <?= $colorClasses['fill'] ?> transition-all" style="width: <?= $pct ?>%"></div>
     </div>
 </div>

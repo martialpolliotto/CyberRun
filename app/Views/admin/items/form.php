@@ -49,7 +49,7 @@
 
             <label class="block">
                 <span class="block text-xs text-primary/70 uppercase tracking-wider mb-1">Slot</span>
-                <select name="slot" required class="w-full bg-black/60 border border-primary/40 text-white px-3 py-2 focus:border-accent focus:outline-none">
+                <select name="slot" required class="w-full bg-surface-alt border border-primary/40 text-primary px-3 py-2 focus:border-accent focus:outline-none">
                     <option value="">— choisir —</option>
                     <?php foreach ($slots as $key => $label): ?>
                         <option value="<?= esc($key) ?>" <?= $val('slot') === $key ? 'selected' : '' ?>><?= esc($label) ?></option>
@@ -59,7 +59,7 @@
 
             <label class="block">
                 <span class="block text-xs text-primary/70 uppercase tracking-wider mb-1">Description</span>
-                <textarea name="description" rows="3" class="w-full bg-black/60 border border-primary/40 text-white px-3 py-2 focus:border-accent focus:outline-none placeholder:text-primary/30 font-mono" placeholder="Lore court et utile..."><?= esc($val('description')) ?></textarea>
+                <textarea name="description" rows="3" class="w-full bg-surface-alt border border-primary/40 text-primary px-3 py-2 focus:border-accent focus:outline-none placeholder:text-primary/30 font-mono" placeholder="Lore court et utile..."><?= esc($val('description')) ?></textarea>
             </label>
 
             <label class="flex items-center gap-2 text-sm text-primary/80 cursor-pointer">
@@ -79,7 +79,7 @@
                 ] as $field => $label): ?>
                     <label class="block">
                         <span class="block text-xs text-primary/70 uppercase tracking-wider mb-1"><?= esc($label) ?></span>
-                        <input type="number" name="<?= $field ?>" value="<?= (int) $val($field, 0) ?>" class="w-full bg-black/60 border border-primary/40 text-white px-3 py-2 focus:border-accent focus:outline-none font-mono">
+                        <input type="number" name="<?= $field ?>" value="<?= (int) $val($field, 0) ?>" class="w-full bg-surface-alt border border-primary/40 text-primary px-3 py-2 focus:border-accent focus:outline-none font-mono">
                     </label>
                 <?php endforeach ?>
             </div>
@@ -112,7 +112,7 @@
             <?php endif ?>
         </div>
 
-        <button type="submit" class="w-full px-4 py-3 border border-accent bg-accent text-white font-bold uppercase tracking-wider hover:bg-pink-600 transition">
+        <button type="submit" class="w-full px-4 py-3 border border-accent bg-accent text-white font-bold uppercase tracking-wider hover:bg-sky-800 transition">
             <?= $isEdit ? 'Sauvegarder' : 'Créer' ?>
         </button>
     </form>
@@ -121,7 +121,7 @@
         <!-- Statut catalogue : actif <-> hors-circuit -->
         <div class="border border-warning/40 bg-warning/5 p-4 space-y-2">
             <p class="text-xs text-warning/80 uppercase tracking-wider">&gt; STATUT_CATALOGUE</p>
-            <p class="text-sm text-primary/80">Actuellement détenu par <strong class="text-white"><?= (int) $owners ?></strong> joueur(s).</p>
+            <p class="text-sm text-primary/80">Actuellement détenu par <strong class="text-primary"><?= (int) $owners ?></strong> joueur(s).</p>
             <?php if ((int) $item['discontinued'] === 0): ?>
                 <p class="text-sm text-warning">"Mettre hors-circuit" déséquipe automatiquement tous les joueurs et empêche tout futur équipement. Item conservé en BDD.</p>
                 <form method="post" action="/admin/items/<?= (int) $item['id'] ?>/discontinue">

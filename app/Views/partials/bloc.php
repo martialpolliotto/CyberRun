@@ -1,26 +1,27 @@
 <?php
 /**
- * Bloc encadré "system readout" cyberpunk.
+ * Bloc encadré (carte sobre Torn-like).
  *
- * @var string|null $title    Label affiché en en-tête (préfixé "> ").
- * @var string      $variant  primary|accent|danger|warning|success — détermine la couleur du cadre.
+ * @var string|null $title    Label affiché en en-tête.
+ * @var string      $variant  primary|accent|danger|warning|success — détermine la couleur du cadre + label.
  * @var string|null $extraClass  Classes Tailwind supplémentaires (ex: padding, layout).
- * @var string|null $slot     Contenu HTML du bloc (ou utilisez la section "bloc" si extension).
+ * @var string|null $slot     Contenu HTML du bloc.
  */
 
 $variant = $variant ?? 'primary';
 
+// Sober Torn-like : carte blanche (bg-surface-alt) avec une bordure et un label coloré selon variant.
 $styles = match ($variant) {
-    'accent'  => ['border' => 'border-accent/40',  'bg' => 'bg-accent/5',  'label' => 'text-accent/70'],
-    'danger'  => ['border' => 'border-danger/40',  'bg' => 'bg-danger/10', 'label' => 'text-danger/80'],
-    'warning' => ['border' => 'border-warning/40', 'bg' => 'bg-warning/10','label' => 'text-warning/80'],
-    'success' => ['border' => 'border-success/40', 'bg' => 'bg-success/10','label' => 'text-success/80'],
-    default   => ['border' => 'border-primary/40', 'bg' => 'bg-primary/5', 'label' => 'text-primary/60'],
+    'accent'  => ['border' => 'border-accent/30',  'label' => 'text-accent'],
+    'danger'  => ['border' => 'border-danger/30',  'label' => 'text-danger'],
+    'warning' => ['border' => 'border-warning/40', 'label' => 'text-warning'],
+    'success' => ['border' => 'border-success/40', 'label' => 'text-success'],
+    default   => ['border' => 'border-line',       'label' => 'text-muted'],
 };
 ?>
-<div class="border <?= $styles['border'] ?> <?= $styles['bg'] ?> p-3 <?= $extraClass ?? '' ?>">
+<div class="border <?= $styles['border'] ?> bg-surface-alt rounded p-4 <?= $extraClass ?? '' ?>">
     <?php if (! empty($title)): ?>
-        <p class="text-xs <?= $styles['label'] ?> mb-1 uppercase tracking-wider">&gt; <?= esc($title) ?></p>
+        <p class="text-xs <?= $styles['label'] ?> mb-2 uppercase tracking-wider font-semibold"><?= esc($title) ?></p>
     <?php endif; ?>
     <?= $slot ?? '' ?>
 </div>

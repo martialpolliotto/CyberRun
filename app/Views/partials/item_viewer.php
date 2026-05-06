@@ -23,15 +23,16 @@ $viewerId  = 'viewer-' . ($item['id'] ?? bin2hex(random_bytes(3)));
 ?>
 
 <?php if ($hasModel): ?>
-    <div id="<?= $viewerId ?>" class="<?= $dimClass ?> border border-primary/40 bg-black"
+    <!-- Le canvas 3D garde un fond noir : meilleur rendu pour les modèles + lights -->
+    <div id="<?= $viewerId ?>" class="<?= $dimClass ?> border border-line bg-black rounded"
          data-model-src="<?= esc($item['model_path']) ?>"
          data-viewer="three"></div>
     <?= $this->include('partials/item_viewer_three_init') ?>
 <?php elseif ($hasImage): ?>
     <img src="<?= esc($item['image_path']) ?>" alt="<?= esc($item['name'] ?? '') ?>"
-         class="<?= $dimClass ?> object-contain border border-primary/40 bg-black/50">
+         class="<?= $dimClass ?> object-contain border border-line bg-stone-100 rounded">
 <?php else: ?>
-    <div class="<?= $dimClass ?> border border-primary/30 bg-black/30 flex items-center justify-center text-primary/30 text-xs uppercase tracking-wider">
+    <div class="<?= $dimClass ?> border border-line bg-stone-100 flex items-center justify-center text-muted text-xs uppercase tracking-wider rounded">
         no media
     </div>
 <?php endif ?>

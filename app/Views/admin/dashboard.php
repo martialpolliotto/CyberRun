@@ -14,21 +14,21 @@
 
     <!-- Stats globales -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div class="border border-primary/30 bg-black/40 p-3 text-center">
+        <div class="border border-primary/30 bg-surface-alt p-3 text-center">
             <p class="text-primary/70 text-xs uppercase tracking-wider">Items total</p>
-            <p class="text-3xl text-white font-bold mt-1"><?= (int) $stats['items_total'] ?></p>
+            <p class="text-3xl text-primary font-bold mt-1"><?= (int) $stats['items_total'] ?></p>
         </div>
-        <div class="border border-success/30 bg-black/40 p-3 text-center">
+        <div class="border border-success/30 bg-surface-alt p-3 text-center">
             <p class="text-success/70 text-xs uppercase tracking-wider">Items actifs</p>
-            <p class="text-3xl text-white font-bold mt-1"><?= (int) $stats['items_active'] ?></p>
+            <p class="text-3xl text-primary font-bold mt-1"><?= (int) $stats['items_active'] ?></p>
         </div>
-        <div class="border border-warning/30 bg-black/40 p-3 text-center">
+        <div class="border border-warning/30 bg-surface-alt p-3 text-center">
             <p class="text-warning/70 text-xs uppercase tracking-wider">Hors-circuit</p>
-            <p class="text-3xl text-white font-bold mt-1"><?= (int) $stats['items_discontinued'] ?></p>
+            <p class="text-3xl text-primary font-bold mt-1"><?= (int) $stats['items_discontinued'] ?></p>
         </div>
-        <div class="border border-primary/30 bg-black/40 p-3 text-center">
+        <div class="border border-primary/30 bg-surface-alt p-3 text-center">
             <p class="text-primary/70 text-xs uppercase tracking-wider">Joueurs</p>
-            <p class="text-3xl text-white font-bold mt-1"><?= (int) $stats['players_total'] ?></p>
+            <p class="text-3xl text-primary font-bold mt-1"><?= (int) $stats['players_total'] ?></p>
         </div>
     </div>
 
@@ -40,7 +40,7 @@
                 <p class="text-warning font-bold uppercase tracking-wider">Gestion des items</p>
                 <p class="text-primary/70 text-sm mt-1">Créer, éditer, mettre hors-circuit ou supprimer définitivement les items du catalogue.</p>
             </a>
-            <div class="block border border-primary/20 bg-black/30 p-4 opacity-60">
+            <div class="block border border-primary/20 bg-surface-alt p-4 opacity-60">
                 <p class="text-primary/40 font-bold uppercase tracking-wider">Gestion utilisateurs</p>
                 <p class="text-primary/40 text-sm mt-1">À venir.</p>
             </div>
