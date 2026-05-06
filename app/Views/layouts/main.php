@@ -61,6 +61,8 @@
     </div>
 </header>
 
+<?= view('partials/status_strip') ?>
+
 <main class="container mx-auto px-4 py-6">
     <?= $this->renderSection('content') ?>
 </main>
