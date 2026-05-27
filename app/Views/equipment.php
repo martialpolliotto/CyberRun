@@ -2,21 +2,19 @@
 
 <?= $this->section('content') ?>
 
-<div class="max-w-5xl mx-auto space-y-6">
+<div class="mx-auto" style="max-width: 64rem;">
 
-    <!-- Header -->
-    <div class="flex items-end justify-between flex-wrap gap-2">
+    <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-3">
         <div>
-            <h1 class="text-3xl md:text-4xl font-bold text-accent">&gt; EQUIPEMENT</h1>
-            <p class="text-primary/60 text-sm mt-1">// Gère ton chrome. Un item équipé par slot.</p>
+            <h1 class="h3 mb-0">Équipement</h1>
+            <p class="text-muted small mb-0">Un item équipé par slot.</p>
         </div>
-        <div class="text-right">
-            <p class="text-xs text-primary/60 uppercase tracking-wider">Pseudo</p>
-            <p class="text-accent font-bold"><?= esc($user->username) ?></p>
+        <div class="text-end small">
+            <div class="text-muted text-uppercase">Pseudo</div>
+            <div class="fw-bold"><?= esc($user->username) ?></div>
         </div>
     </div>
 
-    <!-- Flash -->
     <?php if (session()->has('message')): ?>
         <?= view('partials/alert', ['variant' => 'success', 'message' => session('message')]) ?>
     <?php endif ?>
@@ -24,108 +22,101 @@
         <?= view('partials/alert', ['variant' => 'danger', 'message' => session('error')]) ?>
     <?php endif ?>
 
-    <!-- Stats récap (base + bonus = total) -->
-    <div>
-        <p class="text-xs text-primary/60 mb-2 uppercase tracking-wider">&gt; STATS_EFFECTIVES</p>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <?php
-                $statLabels = ['force' => 'Force', 'blindage' => 'Blindage', 'reflexes' => 'Réflexes', 'hack' => 'Hack'];
-            ?>
-            <?php foreach ($statLabels as $key => $label): ?>
-                <div class="border border-primary/30 bg-surface-alt p-3 text-center">
-                    <p class="text-primary/70 text-xs uppercase tracking-wider"><?= $label ?></p>
-                    <p class="text-3xl text-primary font-bold mt-1"><?= $stats['total'][$key] ?></p>
-                    <p class="text-xs text-primary/60 mt-1">
-                        <?= $stats['base'][$key] ?>
-                        <?php if ($stats['bonus'][$key] > 0): ?>
-                            <span class="text-success">+ <?= $stats['bonus'][$key] ?></span>
-                        <?php endif ?>
-                    </p>
+    <!-- Stats récap -->
+    <h2 class="small text-uppercase text-muted mb-2">Stats effectives</h2>
+    <div class="row g-3 mb-4">
+        <?php
+            $statLabels = ['force' => 'Force', 'blindage' => 'Blindage', 'reflexes' => 'Réflexes', 'hack' => 'Hack'];
+        ?>
+        <?php foreach ($statLabels as $key => $label): ?>
+            <div class="col-6 col-md-3">
+                <div class="card text-center">
+                    <div class="card-body p-3">
+                        <div class="small text-muted text-uppercase"><?= $label ?></div>
+                        <div class="fs-3 fw-bold mt-1"><?= $stats['total'][$key] ?></div>
+                        <div class="small text-muted mt-1">
+                            <?= $stats['base'][$key] ?><?php if ($stats['bonus'][$key] > 0): ?> + <?= $stats['bonus'][$key] ?><?php endif ?>
+                        </div>
+                    </div>
                 </div>
-            <?php endforeach ?>
-        </div>
+            </div>
+        <?php endforeach ?>
     </div>
 
     <!-- Slots équipés -->
-    <div>
-        <p class="text-xs text-primary/60 mb-2 uppercase tracking-wider">&gt; SLOTS_ÉQUIPÉS</p>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <?php foreach ($slots as $slotKey => $slotLabel): ?>
-                <?php $eq = $equipped[$slotKey] ?? null; ?>
-                <div class="border border-primary/30 bg-surface-alt p-3">
-                    <div class="flex items-baseline justify-between">
-                        <p class="text-primary/70 text-xs uppercase tracking-wider"><?= $slotLabel ?></p>
+    <h2 class="small text-uppercase text-muted mb-2">Slots équipés</h2>
+    <div class="row g-3 mb-4">
+        <?php foreach ($slots as $slotKey => $slotLabel): ?>
+            <?php $eq = $equipped[$slotKey] ?? null; ?>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-baseline">
+                            <span class="small text-muted text-uppercase"><?= $slotLabel ?></span>
+                            <?php if ($eq): ?>
+                                <form method="post" action="/equipment/unequip/<?= esc($slotKey) ?>" class="d-inline m-0">
+                                    <?= csrf_field() ?>
+                                    <button type="submit" class="btn btn-sm btn-link text-muted p-0">déséquiper</button>
+                                </form>
+                            <?php endif ?>
+                        </div>
                         <?php if ($eq): ?>
-                            <form method="post" action="/equipment/unequip/<?= esc($slotKey) ?>" class="inline">
-                                <?= csrf_field() ?>
-                                <button type="submit" class="text-xs text-danger hover:text-red-300 transition">[déséquiper]</button>
-                            </form>
+                            <div class="fw-bold mt-1"><?= esc($eq['item_name']) ?></div>
+                            <div class="small mt-1"><?= view('partials/bonus_inline', ['item' => $eq]) ?></div>
+                            <?php if (! empty($eq['item_description'])): ?>
+                                <div class="text-muted small fst-italic mt-2"><?= esc($eq['item_description']) ?></div>
+                            <?php endif ?>
+                        <?php else: ?>
+                            <div class="text-muted fst-italic mt-1">(aucun équipé)</div>
                         <?php endif ?>
                     </div>
-                    <?php if ($eq): ?>
-                        <p class="text-primary font-bold mt-1"><?= esc($eq['item_name']) ?></p>
-                        <p class="text-xs mt-1"><?= view('partials/bonus_inline', ['item' => $eq]) ?></p>
-                        <?php if (! empty($eq['item_description'])): ?>
-                            <p class="text-primary/50 text-xs italic mt-2">// <?= esc($eq['item_description']) ?></p>
-                        <?php endif ?>
-                    <?php else: ?>
-                        <p class="text-primary/30 italic mt-1">(aucun équipé)</p>
-                    <?php endif ?>
                 </div>
-            <?php endforeach ?>
-        </div>
+            </div>
+        <?php endforeach ?>
     </div>
 
     <!-- Inventaire disponible -->
-    <div>
-        <p class="text-xs text-primary/60 mb-2 uppercase tracking-wider">&gt; INVENTAIRE_DISPONIBLE</p>
-        <?php if (empty($available)): ?>
-            <p class="text-primary/40 italic text-sm">Aucun item disponible (tout est équipé).</p>
-        <?php else: ?>
-            <div class="space-y-4">
-                <?php foreach ($slots as $slotKey => $slotLabel): ?>
-                    <?php $items = $available[$slotKey] ?? []; ?>
-                    <?php if (empty($items)) continue; ?>
-                    <div>
-                        <p class="text-primary/60 text-xs uppercase tracking-wider mb-1"><?= $slotLabel ?></p>
-                        <div class="space-y-2">
-                            <?php foreach ($items as $it): ?>
-                                <div class="flex items-center justify-between border border-primary/20 bg-surface-alt p-2">
-                                    <div>
-                                        <p class="text-primary text-sm font-bold"><?= esc($it['item_name']) ?></p>
-                                        <p class="text-xs"><?= view('partials/bonus_inline', ['item' => $it]) ?></p>
-                                    </div>
-                                    <form method="post" action="/equipment/equip/<?= (int) $it['id'] ?>" class="inline">
-                                        <?= csrf_field() ?>
-                                        <button type="submit" class="px-3 py-1 border border-accent/60 text-accent hover:bg-accent hover:text-accent transition text-xs uppercase tracking-wider">
-                                            Équiper
-                                        </button>
-                                    </form>
-                                </div>
-                            <?php endforeach ?>
-                        </div>
-                    </div>
-                <?php endforeach ?>
+    <h2 class="small text-uppercase text-muted mb-2">Inventaire disponible</h2>
+    <?php if (empty($available)): ?>
+        <p class="text-muted fst-italic small">Aucun item disponible (tout est équipé).</p>
+    <?php else: ?>
+        <?php foreach ($slots as $slotKey => $slotLabel): ?>
+            <?php $items = $available[$slotKey] ?? []; ?>
+            <?php if (empty($items)) continue; ?>
+            <div class="mb-3">
+                <div class="small text-muted text-uppercase mb-1"><?= $slotLabel ?></div>
+                <ul class="list-group">
+                    <?php foreach ($items as $it): ?>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold"><?= esc($it['item_name']) ?></div>
+                                <div class="small"><?= view('partials/bonus_inline', ['item' => $it]) ?></div>
+                            </div>
+                            <form method="post" action="/equipment/equip/<?= (int) $it['id'] ?>" class="m-0">
+                                <?= csrf_field() ?>
+                                <button type="submit" class="btn btn-sm btn-outline-dark">Équiper</button>
+                            </form>
+                        </li>
+                    <?php endforeach ?>
+                </ul>
             </div>
-        <?php endif ?>
-    </div>
+        <?php endforeach ?>
+    <?php endif ?>
 
-    <!-- Cache obsolète : items hors-circuit (read-only) -->
+    <!-- Cache obsolète -->
     <?php if (! empty($obsolete)): ?>
-        <div>
-            <p class="text-xs text-warning/80 mb-2 uppercase tracking-wider">&gt; CACHE_OBSOLÈTE <span class="text-warning/40">(items hors-circuit, ne peuvent plus être équipés)</span></p>
-            <div class="space-y-2">
-                <?php foreach ($obsolete as $it): ?>
-                    <div class="flex items-center justify-between border border-warning/30 bg-warning/5 p-2 opacity-80">
-                        <div>
-                            <p class="text-warning/80 text-sm font-bold"><?= esc($it['item_name']) ?></p>
-                            <p class="text-xs text-primary/50"><?= view('partials/bonus_inline', ['item' => $it]) ?></p>
-                        </div>
-                        <span class="text-xs text-warning/60 italic uppercase tracking-wider">hors-circuit</span>
+        <h2 class="small text-uppercase text-muted mt-4 mb-2">Cache obsolète <span class="fw-normal text-muted">(items hors-circuit)</span></h2>
+        <ul class="list-group">
+            <?php foreach ($obsolete as $it): ?>
+                <li class="list-group-item d-flex justify-content-between align-items-center text-muted">
+                    <div>
+                        <div class="fw-bold"><?= esc($it['item_name']) ?></div>
+                        <div class="small"><?= view('partials/bonus_inline', ['item' => $it]) ?></div>
                     </div>
-                <?php endforeach ?>
-            </div>
-        </div>
+                    <span class="small fst-italic">hors-circuit</span>
+                </li>
+            <?php endforeach ?>
+        </ul>
     <?php endif ?>
 
 </div>

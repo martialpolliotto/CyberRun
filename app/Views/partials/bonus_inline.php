@@ -1,10 +1,9 @@
 <?php
 /**
- * Affiche les bonus d'un item en ligne, ex: "+3 FRC +1 RFX".
+ * Affiche les bonus d'un item en ligne, ex: "+3 Force +1 Réflexes".
  *
- * @var array<string,int> $bonuses  ['force'=>3,'blindage'=>0,'reflexes'=>1,'hack'=>0]
- *                                  OU on peut passer item: array{bonus_force,...}
- * @var array<string,int>|null $item Si fourni, lit les bonus_* depuis cet array.
+ * @var array<string,int> $bonuses
+ * @var array<string,int>|null $item
  */
 
 $labels = [
@@ -30,7 +29,7 @@ foreach ($labels as $stat => $code) {
     $val = (int) ($bonuses[$stat] ?? 0);
     if ($val !== 0) {
         $sign = $val > 0 ? '+' : '';
-        $parts[] = '<span class="text-success">' . $sign . $val . ' ' . $code . '</span>';
+        $parts[] = '<span class="fw-semibold">' . $sign . $val . ' ' . $code . '</span>';
     }
 }
-echo $parts === [] ? '<span class="text-primary/30">aucun bonus</span>' : implode(' ', $parts);
+echo $parts === [] ? '<span class="text-muted">aucun bonus</span>' : implode(' ', $parts);

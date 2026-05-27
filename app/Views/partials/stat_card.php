@@ -1,21 +1,21 @@
 <?php
 /**
- * Carte de statistique (Force, Blindage, Réflexes, Hack...).
+ * Carte de statistique (Force, Blindage, Réflexes, Hack...). Bootstrap.
  *
  * @var string  $label
  * @var int     $value
- * @var string|null $href  Si fourni, la carte devient cliquable (futur lien vers /lab/train/X par ex).
+ * @var string|null $href  Si fourni, la carte devient cliquable.
  */
 
-$inner = '<p class="text-primary/70 text-xs uppercase tracking-wider">' . esc($label) . '</p>'
-       . '<p class="text-3xl text-primary font-bold mt-1">' . number_format($value) . '</p>';
+$inner = '<div class="small text-muted text-uppercase">' . esc($label) . '</div>'
+       . '<div class="fs-3 fw-bold mt-1">' . number_format($value) . '</div>';
 ?>
 <?php if (! empty($href)): ?>
-    <a href="<?= esc($href) ?>" class="block border border-primary/30 bg-surface-alt p-3 text-center hover:border-accent/60 hover:bg-primary/5 transition">
-        <?= $inner ?>
+    <a href="<?= esc($href) ?>" class="card text-center text-decoration-none text-dark">
+        <div class="card-body p-3"><?= $inner ?></div>
     </a>
 <?php else: ?>
-    <div class="border border-primary/30 bg-surface-alt p-3 text-center hover:border-accent/60 transition">
-        <?= $inner ?>
+    <div class="card text-center">
+        <div class="card-body p-3"><?= $inner ?></div>
     </div>
-<?php endif; ?>
+<?php endif ?>

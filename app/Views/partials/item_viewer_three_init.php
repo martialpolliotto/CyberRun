@@ -29,7 +29,7 @@ function initViewer(el) {
     const h = el.clientHeight;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
+    scene.background = new THREE.Color(0x222222);
 
     const camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
     camera.position.set(2, 2, 3);
@@ -39,12 +39,11 @@ function initViewer(el) {
     renderer.setPixelRatio(window.devicePixelRatio);
     el.appendChild(renderer.domElement);
 
-    // Lumières basiques cyberpunk
-    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-    const dir = new THREE.DirectionalLight(0x22d3ee, 1.2);   // cyan accent
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const dir = new THREE.DirectionalLight(0xffffff, 1.0);
     dir.position.set(5, 5, 5);
     scene.add(dir);
-    const fill = new THREE.DirectionalLight(0xec4899, 0.6);  // pink fill
+    const fill = new THREE.DirectionalLight(0xffffff, 0.4);
     fill.position.set(-5, -3, 2);
     scene.add(fill);
 
@@ -56,7 +55,6 @@ function initViewer(el) {
 
     new GLTFLoader().load(src, (gltf) => {
         const obj = gltf.scene;
-        // Centrer + scaler pour que ça rentre dans la vue
         const box = new THREE.Box3().setFromObject(obj);
         const size = box.getSize(new THREE.Vector3()).length();
         const center = box.getCenter(new THREE.Vector3());

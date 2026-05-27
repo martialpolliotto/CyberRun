@@ -1,28 +1,27 @@
 <?php
 /**
- * Alerte (erreur, succès, warning, info).
+ * Alerte (Bootstrap).
  *
  * @var string|array $message
  * @var string|null  $variant   danger|success|warning|info (def: info)
  */
 
 $variant = $variant ?? 'info';
-$styles = match ($variant) {
-    'danger'  => ['border' => 'border-danger',  'bg' => 'bg-danger/10',  'text' => 'text-danger',  'prefix' => '! ERREUR'],
-    'success' => ['border' => 'border-success', 'bg' => 'bg-success/10', 'text' => 'text-success', 'prefix' => '> OK'],
-    'warning' => ['border' => 'border-warning', 'bg' => 'bg-warning/10', 'text' => 'text-warning', 'prefix' => '~ ALERTE'],
-    default   => ['border' => 'border-primary', 'bg' => 'bg-primary/10', 'text' => 'text-primary', 'prefix' => '> INFO'],
+$class   = match ($variant) {
+    'danger'  => 'alert-dark',
+    'success' => 'alert-secondary',
+    'warning' => 'alert-secondary',
+    default   => 'alert-light',
 };
 ?>
-<div class="border <?= $styles['border'] ?> <?= $styles['bg'] ?> <?= $styles['text'] ?> p-3 text-sm">
-    <p class="text-xs opacity-70 mb-1 uppercase tracking-wider"><?= $styles['prefix'] ?></p>
+<div class="alert <?= $class ?>" role="alert">
     <?php if (is_array($message)): ?>
-        <ul class="list-none space-y-1">
+        <ul class="mb-0 ps-3">
             <?php foreach ($message as $m): ?>
-                <li>&gt; <?= esc((string) $m) ?></li>
+                <li><?= esc((string) $m) ?></li>
             <?php endforeach ?>
         </ul>
     <?php else: ?>
-        <p>&gt; <?= esc((string) $message) ?></p>
+        <?= esc((string) $message) ?>
     <?php endif ?>
 </div>

@@ -1,24 +1,24 @@
 <?php
 /**
- * Bouton cyberpunk.
+ * Bouton.
  *
  * @var string $label
  * @var string|null $type        submit|button (def: submit)
- * @var string|null $variant     accent|primary|danger|ghost (def: accent)
+ * @var string|null $variant     primary|secondary|danger|ghost (def: primary)
  * @var string|null $extraClass
  */
 
 $type    = $type    ?? 'submit';
-$variant = $variant ?? 'accent';
+$variant = $variant ?? 'primary';
 
-$colors = match ($variant) {
-    'primary' => 'bg-primary text-white border-primary hover:bg-slate-700',
-    'danger'  => 'bg-danger text-white border-danger hover:bg-red-700',
-    'ghost'   => 'bg-transparent text-primary border-line hover:border-accent hover:text-accent',
-    default   => 'bg-accent text-white border-accent hover:bg-sky-800',
+$btnClass = match ($variant) {
+    'secondary' => 'btn-outline-dark',
+    'danger'    => 'btn-dark',
+    'ghost'     => 'btn-outline-secondary',
+    default     => 'btn-dark',
 };
 ?>
 <button type="<?= esc($type) ?>"
-        class="w-full px-4 py-2 border font-medium rounded transition <?= $colors ?> <?= $extraClass ?? '' ?>">
+        class="btn <?= $btnClass ?> w-100 <?= $extraClass ?? '' ?>">
     <?= esc($label) ?>
 </button>

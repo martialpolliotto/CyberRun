@@ -1,6 +1,6 @@
 <?php
 /**
- * Input texte/email/password style cyberpunk.
+ * Input texte/email/password (Bootstrap).
  *
  * @var string $name
  * @var string $label
@@ -18,10 +18,12 @@ $required    = ! empty($required);
 $autocomplete = $autocomplete ?? null;
 $inputmode   = $inputmode   ?? null;
 $placeholder = $placeholder ?? null;
+$id          = 'inp_' . preg_replace('/[^a-z0-9]/i', '_', $name);
 ?>
-<label class="block">
-    <span class="block text-xs text-primary/70 uppercase tracking-wider mb-1"><?= esc($label) ?></span>
+<div class="mb-3">
+    <label for="<?= esc($id) ?>" class="form-label small"><?= esc($label) ?></label>
     <input
+        id="<?= esc($id) ?>"
         type="<?= esc($type) ?>"
         name="<?= esc($name) ?>"
         value="<?= esc($value ?? '') ?>"
@@ -29,6 +31,6 @@ $placeholder = $placeholder ?? null;
         <?php if ($autocomplete !== null): ?>autocomplete="<?= esc($autocomplete) ?>"<?php endif ?>
         <?php if ($inputmode   !== null): ?>inputmode="<?= esc($inputmode) ?>"<?php endif ?>
         <?php if ($placeholder !== null): ?>placeholder="<?= esc($placeholder) ?>"<?php endif ?>
-        class="w-full bg-surface-alt border border-line text-primary px-3 py-2 focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none placeholder:text-muted/60 transition rounded"
+        class="form-control"
     >
-</label>
+</div>

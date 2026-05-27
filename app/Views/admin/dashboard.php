@@ -2,47 +2,66 @@
 
 <?= $this->section('content') ?>
 
-<div class="max-w-5xl mx-auto space-y-4">
+<div class="mx-auto" style="max-width: 64rem;">
 
-    <!-- Bandeau ADMIN -->
-    <div class="border border-warning/60 bg-warning/10 px-4 py-2 flex items-center gap-3">
-        <span class="text-warning font-bold uppercase tracking-widest">[ ADMIN ]</span>
-        <span class="text-warning/80 text-sm">// Tu es dans la zone administration. Toutes les actions sont loguées.</span>
+    <div class="alert alert-dark py-2 mb-3 d-flex align-items-center gap-2">
+        <span class="fw-bold text-uppercase">[ ADMIN ]</span>
+        <span class="small">Toutes les actions sont loguées.</span>
     </div>
 
-    <h1 class="text-3xl md:text-4xl font-bold text-warning">&gt; ADMIN_DASHBOARD</h1>
+    <h1 class="h3 mb-3">Admin — Dashboard</h1>
 
-    <!-- Stats globales -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div class="border border-primary/30 bg-surface-alt p-3 text-center">
-            <p class="text-primary/70 text-xs uppercase tracking-wider">Items total</p>
-            <p class="text-3xl text-primary font-bold mt-1"><?= (int) $stats['items_total'] ?></p>
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card text-center">
+                <div class="card-body p-3">
+                    <div class="small text-muted text-uppercase">Items total</div>
+                    <div class="fs-3 fw-bold mt-1"><?= (int) $stats['items_total'] ?></div>
+                </div>
+            </div>
         </div>
-        <div class="border border-success/30 bg-surface-alt p-3 text-center">
-            <p class="text-success/70 text-xs uppercase tracking-wider">Items actifs</p>
-            <p class="text-3xl text-primary font-bold mt-1"><?= (int) $stats['items_active'] ?></p>
+        <div class="col-6 col-md-3">
+            <div class="card text-center">
+                <div class="card-body p-3">
+                    <div class="small text-muted text-uppercase">Items actifs</div>
+                    <div class="fs-3 fw-bold mt-1"><?= (int) $stats['items_active'] ?></div>
+                </div>
+            </div>
         </div>
-        <div class="border border-warning/30 bg-surface-alt p-3 text-center">
-            <p class="text-warning/70 text-xs uppercase tracking-wider">Hors-circuit</p>
-            <p class="text-3xl text-primary font-bold mt-1"><?= (int) $stats['items_discontinued'] ?></p>
+        <div class="col-6 col-md-3">
+            <div class="card text-center">
+                <div class="card-body p-3">
+                    <div class="small text-muted text-uppercase">Hors-circuit</div>
+                    <div class="fs-3 fw-bold mt-1"><?= (int) $stats['items_discontinued'] ?></div>
+                </div>
+            </div>
         </div>
-        <div class="border border-primary/30 bg-surface-alt p-3 text-center">
-            <p class="text-primary/70 text-xs uppercase tracking-wider">Joueurs</p>
-            <p class="text-3xl text-primary font-bold mt-1"><?= (int) $stats['players_total'] ?></p>
+        <div class="col-6 col-md-3">
+            <div class="card text-center">
+                <div class="card-body p-3">
+                    <div class="small text-muted text-uppercase">Joueurs</div>
+                    <div class="fs-3 fw-bold mt-1"><?= (int) $stats['players_total'] ?></div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Outils admin -->
-    <div>
-        <p class="text-xs text-primary/60 mb-2 uppercase tracking-wider">&gt; OUTILS</p>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <a href="/admin/items" class="block border border-warning/40 bg-warning/5 p-4 hover:border-accent/60 hover:bg-warning/10 transition">
-                <p class="text-warning font-bold uppercase tracking-wider">Gestion des items</p>
-                <p class="text-primary/70 text-sm mt-1">Créer, éditer, mettre hors-circuit ou supprimer définitivement les items du catalogue.</p>
+    <h2 class="small text-uppercase text-muted mb-2">Outils</h2>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <a href="/admin/items" class="card text-decoration-none text-dark h-100">
+                <div class="card-body">
+                    <div class="fw-bold text-uppercase">Gestion des items</div>
+                    <p class="small text-muted mb-0">Créer, éditer, mettre hors-circuit ou supprimer définitivement les items du catalogue.</p>
+                </div>
             </a>
-            <div class="block border border-primary/20 bg-surface-alt p-4 opacity-60">
-                <p class="text-primary/40 font-bold uppercase tracking-wider">Gestion utilisateurs</p>
-                <p class="text-primary/40 text-sm mt-1">À venir.</p>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100 text-muted">
+                <div class="card-body">
+                    <div class="fw-bold text-uppercase">Gestion utilisateurs</div>
+                    <p class="small mb-0">À venir.</p>
+                </div>
             </div>
         </div>
     </div>

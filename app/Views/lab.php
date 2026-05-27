@@ -3,7 +3,6 @@
 <?php
     helper('number');
 
-    // Slug URL → libellé affiché + colonne BDD (miroir de PlayerModel::TRAINABLE_STATS).
     $statLabels = [
         'force'    => 'Force',
         'blindage' => 'Blindage',
@@ -26,21 +25,19 @@
 
 <?= $this->section('content') ?>
 
-<div class="max-w-4xl mx-auto space-y-4">
+<div class="mx-auto" style="max-width: 56rem;">
 
-    <!-- En-tete Lab -->
-    <div class="flex items-end justify-between flex-wrap gap-2">
+    <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-3">
         <div>
-            <h1 class="text-3xl md:text-4xl font-bold text-accent">&gt; LE_LAB</h1>
-            <p class="text-primary/60 text-sm mt-1">// Forge ton chrome. Coût : <?= $cost ?> énergie par entraînement.</p>
+            <h1 class="h3 mb-0">Le Lab</h1>
+            <p class="text-muted small mb-0">Coût : <?= $cost ?> énergie par entraînement.</p>
         </div>
-        <div class="text-right">
-            <p class="text-xs text-primary/60 uppercase tracking-wider">Pseudo</p>
-            <p class="text-accent font-bold"><?= esc($user->username) ?></p>
+        <div class="text-end small">
+            <div class="text-muted text-uppercase">Pseudo</div>
+            <div class="fw-bold"><?= esc($user->username) ?></div>
         </div>
     </div>
 
-    <!-- Flash messages -->
     <?php if (session()->has('message')): ?>
         <?= view('partials/alert', ['variant' => 'success', 'message' => session('message')]) ?>
     <?php endif ?>
@@ -48,7 +45,6 @@
         <?= view('partials/alert', ['variant' => 'danger', 'message' => session('error')]) ?>
     <?php endif ?>
 
-    <!-- Barre energie en evidence -->
     <?= view('partials/resource_bar', [
         'label'   => 'Énergie disponible',
         'current' => $player['energy_current'],
@@ -56,41 +52,39 @@
         'color'   => 'energy',
     ]) ?>
 
-    <!-- 4 cartes d'entrainement -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <div class="row g-3 mt-1">
         <?php foreach ($statLabels as $slug => $label): ?>
             <?php $value = (int) $player[$statColumns[$slug]]; ?>
-            <div class="border border-primary/30 bg-surface-alt p-4 hover:border-accent/60 transition">
-                <div class="flex items-center justify-between mb-3">
-                    <div>
-                        <p class="text-primary/70 text-xs uppercase tracking-wider"><?= esc($label) ?></p>
-                        <p class="text-3xl text-primary font-bold"><?= number_format($value) ?></p>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <div class="small text-muted text-uppercase"><?= esc($label) ?></div>
+                                <div class="fs-3 fw-bold"><?= number_format($value) ?></div>
+                            </div>
+                            <div class="small text-muted">+<?= $gain ?> par session</div>
+                        </div>
+                        <form method="post" action="/lab/train/<?= esc($slug) ?>">
+                            <?= csrf_field() ?>
+                            <button type="submit"
+                                    <?= $canTrain ? '' : 'disabled' ?>
+                                    class="btn btn-dark w-100">
+                                <?php if ($canTrain): ?>
+                                    Entraîner (-<?= $cost ?> NRG)
+                                <?php else: ?>
+                                    <?= empty($player['in_hospital_until']) ? 'Énergie insuffisante' : 'En cyberclinique' ?>
+                                <?php endif ?>
+                            </button>
+                        </form>
                     </div>
-                    <p class="text-success text-xs">+<?= $gain ?> par session</p>
                 </div>
-
-                <form method="post" action="/lab/train/<?= esc($slug) ?>">
-                    <?= csrf_field() ?>
-                    <button type="submit"
-                            <?= $canTrain ? '' : 'disabled' ?>
-                            class="w-full px-3 py-2 border font-bold uppercase tracking-wider text-sm transition <?php
-                                echo $canTrain
-                                    ? 'bg-accent text-white border-accent hover:bg-sky-800 cursor-pointer'
-                                    : 'bg-surface-alt text-primary/30 border-primary/20 cursor-not-allowed';
-                            ?>">
-                        <?php if ($canTrain): ?>
-                            Entraîner (-<?= $cost ?> NRG)
-                        <?php else: ?>
-                            <?= empty($player['in_hospital_until']) ? 'Énergie insuffisante' : 'En cyberclinique' ?>
-                        <?php endif ?>
-                    </button>
-                </form>
             </div>
         <?php endforeach ?>
     </div>
 
-    <p class="text-xs text-primary/40 text-center mt-6">
-        Astuce : l'énergie regen automatiquement (à venir : cron toutes les 5 min).
+    <p class="small text-muted text-center mt-4">
+        L'énergie regen automatiquement (cron toutes les minutes).
     </p>
 
 </div>

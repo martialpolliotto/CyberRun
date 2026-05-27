@@ -2,35 +2,32 @@
 
 <?= $this->section('content') ?>
 
-<div class="max-w-md mx-auto mt-8 space-y-4">
+<div class="mx-auto" style="max-width: 28rem;">
 
-    <div class="text-center mb-6">
-        <h1 class="text-3xl font-bold text-accent">&gt; LIEN_MAGIQUE</h1>
-        <p class="text-primary/60 text-sm mt-1">// On t'envoie un lien d'accès par email.</p>
-    </div>
+    <h1 class="h3 mb-4 text-center">Lien magique</h1>
 
     <?php if (session('error') !== null): ?>
         <?= view('partials/alert', ['variant' => 'danger', 'message' => session('error')]) ?>
     <?php endif ?>
 
-    <?php
-        $form = '<form action="' . url_to('magic-link') . '" method="post" class="space-y-4">'
-              . csrf_field();
-    ?>
-    <?= view('partials/bloc', [
-        'title'   => 'EMAIL_DE_RECUPERATION',
-        'variant' => 'primary',
-        'slot'    => $form
-            . view('partials/input', [
-                'name' => 'email', 'label' => 'Email', 'type' => 'email',
-                'required' => true, 'autocomplete' => 'email', 'inputmode' => 'email',
-            ])
-            . view('partials/button', ['label' => 'Envoyer le lien', 'variant' => 'accent'])
-            . '</form>',
-    ]) ?>
+    <div class="card">
+        <div class="card-body">
+            <p class="text-muted small mb-3">On t'envoie un lien d'accès par email.</p>
+            <form action="<?= url_to('magic-link') ?>" method="post">
+                <?= csrf_field() ?>
 
-    <div class="text-center text-sm text-primary/60">
-        <a href="<?= url_to('login') ?>" class="hover:text-accent transition">[ Retour connexion ]</a>
+                <?= view('partials/input', [
+                    'name' => 'email', 'label' => 'Email', 'type' => 'email',
+                    'required' => true, 'autocomplete' => 'email', 'inputmode' => 'email',
+                ]) ?>
+
+                <?= view('partials/button', ['label' => 'Envoyer le lien']) ?>
+            </form>
+        </div>
+    </div>
+
+    <div class="text-center small mt-3">
+        <a href="<?= url_to('login') ?>" class="text-muted">Retour connexion</a>
     </div>
 
 </div>
