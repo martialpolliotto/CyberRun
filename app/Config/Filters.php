@@ -34,6 +34,8 @@ class Filters extends BaseFilters
         'forcehttps'    => ForceHTTPS::class,
         'pagecache'     => PageCache::class,
         'performance'   => PerformanceMetrics::class,
+        // Bloque les pages d'action quand le joueur est en prison/cyberclinique.
+        'free'          => \App\Filters\FreeFilter::class,
     ];
 
     /**

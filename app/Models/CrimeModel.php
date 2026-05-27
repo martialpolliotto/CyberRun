@@ -51,22 +51,31 @@ class CrimeModel extends Model
      * Calcule le taux de reussite estime pour ce crime, ce joueur, a cet instant.
      * Renvoie un pourcentage entier 0..95.
      *
-     * Facteurs : base + stat/2 + category_xp/10 + time_bonus (si fenetre active).
-     * Hook drug_bonus reste a brancher en V2.
+     * Facteurs : base + stat_effective/2 + category_xp/10 + time_bonus (si fenetre active).
+     *
+     * La stat dominante est lue depuis $effectiveTotals (qui contient deja les bonus
+     * d'equipement, effets actifs et le malus du tier d'addiction). Si non fourni,
+     * fallback a la stat de base brute du player (pour les appels legacy).
      *
      * @param array<string,mixed> $crime
      * @param array<string,mixed> $category
      * @param array<string,mixed> $player
+     * @param array{force:int,blindage:int,reflexes:int,hack:int}|null $effectiveTotals
      */
-    public function estimateSuccessPct(array $crime, array $category, array $player, int $playerCategoryXp, ?int $hourOverride = null): int
+    public function estimateSuccessPct(array $crime, array $category, array $player, int $playerCategoryXp, ?array $effectiveTotals = null, ?int $hourOverride = null): int
     {
         $bonus = 0.0;
 
         // Stat dominante (si la categorie en a une).
         $statSlug = $category['primary_stat'] ?? null;
         if ($statSlug !== null && isset(PlayerModel::TRAINABLE_STATS[$statSlug])) {
-            $col = PlayerModel::TRAINABLE_STATS[$statSlug];
-            $bonus += ((int) ($player[$col] ?? 0)) / 2.0;
+            if ($effectiveTotals !== null && isset($effectiveTotals[$statSlug])) {
+                $statValue = (int) $effectiveTotals[$statSlug];
+            } else {
+                $col = PlayerModel::TRAINABLE_STATS[$statSlug];
+                $statValue = (int) ($player[$col] ?? 0);
+            }
+            $bonus += $statValue / 2.0;
         }
 
         // XP de specialisation dans la categorie.
@@ -162,7 +171,9 @@ class CrimeModel extends Model
         ]);
 
         // ---- Resolution du roll ----
-        $successPct  = $this->estimateSuccessPct($crime, $category, $player, (int) $progress['xp']);
+        // Stats effectives pour que les bonus actifs (drogues) et le malus addiction comptent.
+        $stats       = $playerModel->getEffectiveStats((int) $player['id']);
+        $successPct  = $this->estimateSuccessPct($crime, $category, $player, (int) $progress['xp'], $stats['total']);
         $criticalPct = (int) $crime['critical_fail_pct'];
 
         $rollCritical = random_int(0, 99);

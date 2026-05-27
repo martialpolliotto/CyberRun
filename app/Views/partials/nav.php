@@ -12,18 +12,7 @@
         <a href="/equipment" class="text-dark text-decoration-none">Équipement</a>
         <a href="/inventory" class="text-dark text-decoration-none">Inventaire</a>
 
-        <div class="dropdown">
-            <button class="btn btn-sm btn-link text-dark text-decoration-none p-0 dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                Marchés
-            </button>
-            <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="/shops">Tous les marchés</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="/shop/armurerie">Armurerie</a></li>
-                <li><a class="dropdown-item" href="/shop/ripperdoc">Ripperdoc</a></li>
-                <li><a class="dropdown-item" href="/shop/friperie">Friperie</a></li>
-            </ul>
-        </div>
+        <a href="/shops" class="text-dark text-decoration-none">Marchés</a>
 
         <?php if (auth()->user()->inGroup('admin', 'superadmin')): ?>
             <a href="/admin" class="text-dark text-decoration-none fw-bold">[ADMIN]</a>

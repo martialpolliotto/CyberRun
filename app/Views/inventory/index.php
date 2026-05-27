@@ -19,9 +19,10 @@
     $boosters = array_values(array_filter($consumables, static fn($c) => $c['consumable_type'] === 'booster'));
     $drugs    = array_values(array_filter($consumables, static fn($c) => $c['consumable_type'] === 'drug'));
 
-    // Niveau d'addiction : seuils visuels (sans effets neg pour l'instant).
-    $addiction = (int) $player['addiction_level'];
-    $addictionTier = $addiction >= 100 ? 'dépendant' : ($addiction >= 50 ? 'accro' : ($addiction >= 25 ? 'éveillé' : 'clean'));
+    // Niveau d'addiction + tier resolu (avec ses penalites actives).
+    $addiction     = (int) $player['addiction_level'];
+    $tier          = \App\Models\PlayerModel::addictionTier($addiction);
+    $addictionTier = (string) $tier['label'];
 
     // Helper d'affichage des effets d'un item en ligne.
     $effectsLine = static function (array $c): string {
@@ -108,7 +109,23 @@
             <div class="progress" style="height: 8px;">
                 <div class="progress-bar bg-dark" style="width: <?= min(100, $addiction) ?>%"></div>
             </div>
-            <p class="form-text mt-2 mb-0">Chaque prise de drogue augmente ce seuil. Il décroît de <?= (int) \App\Models\PlayerModel::ADDICTION_DAILY_DECAY ?> points par jour écoulé. À 100+, des effets négatifs apparaîtront (à venir).</p>
+
+            <?php if ((int) $tier['stat_malus'] > 0 || (int) $tier['overdose_bonus'] > 0): ?>
+                <ul class="list-unstyled small mt-3 mb-0">
+                    <?php if ((int) $tier['stat_malus'] > 0): ?>
+                        <li>Pénalité : <strong>−<?= (int) $tier['stat_malus'] ?></strong> sur chaque stat effective (Force, Blindage, Réflexes, Hack).</li>
+                    <?php endif ?>
+                    <?php if ((int) $tier['overdose_bonus'] > 0): ?>
+                        <li>Risque d'overdose : <strong>+<?= (int) $tier['overdose_bonus'] ?>%</strong> sur la prochaine drogue.</li>
+                    <?php endif ?>
+                </ul>
+            <?php else: ?>
+                <p class="form-text mt-2 mb-0">
+                    Paliers : 25 = éveillé · 50 = accro (−2 stats / +5% overdose) ·
+                    75 = dépendant (−5 / +10%) · 100 = sevrage (−10 / +20%).
+                    Décay : <?= (int) \App\Models\PlayerModel::ADDICTION_DAILY_DECAY ?> points / jour.
+                </p>
+            <?php endif ?>
         </div>
     </div>
 

@@ -44,6 +44,37 @@ class PlayerModel extends Model
     /** Decay journalier du seuil de dependance (points par jour ecoule depuis le dernier check). */
     public const ADDICTION_DAILY_DECAY = 10;
 
+    /**
+     * Paliers de dependance et leurs effets negatifs. Tries du plus eleve au plus bas.
+     *
+     * - stat_malus      : valeur soustraite a chaque stat effective (Force/Blindage/Reflexes/Hack)
+     * - overdose_bonus  : pourcentage de points ajoutes au overdose_chance_pct du roll drug
+     *
+     * @var array<int, array{min: int, label: string, stat_malus: int, overdose_bonus: int}>
+     */
+    public const ADDICTION_TIERS = [
+        ['min' => 100, 'label' => 'sevrage',   'stat_malus' => 10, 'overdose_bonus' => 20],
+        ['min' => 75,  'label' => 'dépendant', 'stat_malus' => 5,  'overdose_bonus' => 10],
+        ['min' => 50,  'label' => 'accro',     'stat_malus' => 2,  'overdose_bonus' => 5],
+        ['min' => 25,  'label' => 'éveillé',   'stat_malus' => 0,  'overdose_bonus' => 0],
+        ['min' => 0,   'label' => 'clean',     'stat_malus' => 0,  'overdose_bonus' => 0],
+    ];
+
+    /**
+     * Retourne le tier d'addiction qui s'applique au level donne.
+     *
+     * @return array{min: int, label: string, stat_malus: int, overdose_bonus: int}
+     */
+    public static function addictionTier(int $level): array
+    {
+        foreach (self::ADDICTION_TIERS as $tier) {
+            if ($level >= $tier['min']) {
+                return $tier;
+            }
+        }
+        return self::ADDICTION_TIERS[count(self::ADDICTION_TIERS) - 1];
+    }
+
     /** Coût en énergie d'un entraînement (1 ligne = 1 endroit pour ajuster). */
     public const TRAIN_ENERGY_COST = 5;
     /** Gain de stat par entraînement réussi. */
@@ -116,12 +147,22 @@ class PlayerModel extends Model
             'hack'     => $effects['hack'],
         ];
 
+        // Malus du tier d'addiction (sevrage, dependant...).
+        $tier  = self::addictionTier((int) ($player['addiction_level'] ?? 0));
+        $malus = (int) $tier['stat_malus'];
+        $addiction = [
+            'force'    => $malus,
+            'blindage' => $malus,
+            'reflexes' => $malus,
+            'hack'     => $malus,
+        ];
+
         $total = [];
         foreach ($base as $k => $v) {
-            $total[$k] = $v + $bonus[$k] + $active[$k];
+            $total[$k] = max(0, $v + $bonus[$k] + $active[$k] - $addiction[$k]);
         }
 
-        return ['base' => $base, 'bonus' => $bonus, 'active' => $active, 'total' => $total];
+        return ['base' => $base, 'bonus' => $bonus, 'active' => $active, 'addiction' => $addiction, 'total' => $total];
     }
 
     /**
@@ -372,8 +413,11 @@ class PlayerModel extends Model
         $db->transStart();
 
         // ---- Roll overdose pour les drogues ----
-        if ($kind === 'drug' && (int) $row['overdose_chance_pct'] > 0) {
-            if (random_int(0, 99) < (int) $row['overdose_chance_pct']) {
+        // L'addiction ajoute un bonus % au roll (sevrage = +20%, dependant = +10%, etc.).
+        $addictionTier      = self::addictionTier((int) $player['addiction_level']);
+        $effectiveOverdose  = (int) $row['overdose_chance_pct'] + (int) $addictionTier['overdose_bonus'];
+        if ($kind === 'drug' && $effectiveOverdose > 0) {
+            if (random_int(0, 99) < $effectiveOverdose) {
                 $minM = (int) $row['overdose_hospital_min'];
                 $maxM = max($minM, (int) $row['overdose_hospital_max']);
                 $minutes = random_int($minM, $maxM);

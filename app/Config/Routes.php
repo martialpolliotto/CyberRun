@@ -9,9 +9,16 @@ $routes->get('/', 'Home::index');
 
 service('auth')->routes($routes);
 
+// Routes toujours accessibles (en prison ou a la cyberclinique).
 $routes->group('', ['filter' => 'session'], static function ($routes) {
     $routes->get('profile', 'Profile::index');
+    $routes->get('jail', 'Jail::index');
+    $routes->post('jail/escape', 'Jail::escape');
+});
 
+// Routes "actives" : bloquees si le joueur est incarcere (prison ou hopital).
+// Le filter 'free' redirige vers /jail ou /profile selon l'etat.
+$routes->group('', ['filter' => ['session', 'free']], static function ($routes) {
     $routes->get('lab', 'Lab::index');
     $routes->post('lab/train/(:segment)', 'Lab::train/$1');
 
@@ -34,9 +41,6 @@ $routes->group('', ['filter' => 'session'], static function ($routes) {
     $routes->get('crimes', 'Crimes::index');
     $routes->post('crimes/attempt/(:num)', 'Crimes::attempt/$1');
     $routes->get('crimes/(:segment)', 'Crimes::show/$1');
-
-    $routes->get('jail', 'Jail::index');
-    $routes->post('jail/escape', 'Jail::escape');
 });
 
 // Zone admin : double filter (session + appartenance au groupe "admin").

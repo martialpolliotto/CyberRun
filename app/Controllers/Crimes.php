@@ -55,11 +55,14 @@ class Crimes extends BaseController
         $progress = model(PlayerCrimeProgressModel::class)->getOrCreate((int) $player['id'], (int) $category['id']);
         $crimes   = model(CrimeModel::class)->listForCategory((int) $category['id']);
 
+        // Stats effectives une seule fois pour la page (inclut equip + effets actifs - malus addiction).
+        $stats = model(PlayerModel::class)->getEffectiveStats((int) $player['id']);
+
         // Enrichi chaque crime avec : unlocked, success_pct estime, time_bonus_active.
         $crimeModel = model(CrimeModel::class);
         foreach ($crimes as &$c) {
             $c['_unlocked']      = $crimeModel->isUnlockedFor($c, (int) $progress['xp']);
-            $c['_success_pct']   = $crimeModel->estimateSuccessPct($c, $category, $player, (int) $progress['xp']);
+            $c['_success_pct']   = $crimeModel->estimateSuccessPct($c, $category, $player, (int) $progress['xp'], $stats['total']);
             $c['_time_bonus_on'] = $crimeModel->isTimeBonusActive($c);
         }
         unset($c);
