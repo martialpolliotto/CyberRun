@@ -27,6 +27,13 @@ $routes->group('', ['filter' => 'session'], static function ($routes) {
     $routes->get('fixers/(:segment)', 'Fixers::show/$1');
     $routes->post('fixers/accept/(:num)', 'Fixers::accept/$1');
     $routes->post('fixers/claim/(:num)', 'Fixers::claim/$1');
+
+    $routes->get('crimes', 'Crimes::index');
+    $routes->post('crimes/attempt/(:num)', 'Crimes::attempt/$1');
+    $routes->get('crimes/(:segment)', 'Crimes::show/$1');
+
+    $routes->get('jail', 'Jail::index');
+    $routes->post('jail/escape', 'Jail::escape');
 });
 
 // Zone admin : double filter (session + appartenance au groupe "admin").
@@ -59,4 +66,20 @@ $routes->group('admin', ['filter' => ['session', 'group:admin'], 'namespace' => 
     $routes->get('missions/(:num)/edit',      'Missions::edit/$1');
     $routes->post('missions/(:num)/save',     'Missions::save/$1');
     $routes->post('missions/(:num)/destroy',  'Missions::destroy/$1');
+
+    $routes->get('crime-categories',                  'CrimeCategories::index');
+    $routes->get('crime-categories/new',              'CrimeCategories::new');
+    $routes->post('crime-categories/save',            'CrimeCategories::save');
+    $routes->get('crime-categories/(:num)/edit',      'CrimeCategories::edit/$1');
+    $routes->post('crime-categories/(:num)/save',     'CrimeCategories::save/$1');
+    $routes->post('crime-categories/(:num)/destroy',  'CrimeCategories::destroy/$1');
+
+    $routes->get('crimes',                  'Crimes::index');
+    $routes->get('crimes/new',              'Crimes::new');
+    $routes->post('crimes/save',            'Crimes::save');
+    $routes->get('crimes/(:num)/edit',      'Crimes::edit/$1');
+    $routes->post('crimes/(:num)/save',     'Crimes::save/$1');
+    $routes->post('crimes/(:num)/destroy',  'Crimes::destroy/$1');
+    $routes->post('crimes/(:num)/texts/add',          'Crimes::addText/$1');
+    $routes->post('crimes/(:num)/texts/(:num)/destroy', 'Crimes::deleteText/$1/$2');
 });

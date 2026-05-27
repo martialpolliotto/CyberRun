@@ -81,6 +81,22 @@
             </a>
         </div>
         <div class="col-md-6">
+            <a href="/admin/crime-categories" class="card text-decoration-none text-dark h-100">
+                <div class="card-body">
+                    <div class="fw-bold text-uppercase">Catégories de crimes</div>
+                    <p class="small text-muted mb-0">Regrouper les crimes (stat dominante, ordre d'affichage).</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6">
+            <a href="/admin/crimes" class="card text-decoration-none text-dark h-100">
+                <div class="card-body">
+                    <div class="fw-bold text-uppercase">Crimes</div>
+                    <p class="small text-muted mb-0">Probabilités, récompenses, conséquences critiques, bonus horaire.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6">
             <div class="card h-100 text-muted">
                 <div class="card-body">
                     <div class="fw-bold text-uppercase">Gestion utilisateurs</div>

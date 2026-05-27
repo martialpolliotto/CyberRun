@@ -7,6 +7,7 @@
     <?php if (function_exists('auth') && auth()->loggedIn()): ?>
         <a href="/profile" class="text-dark text-decoration-none">Profil</a>
         <a href="/fixers" class="text-dark text-decoration-none">Fixers</a>
+        <a href="/crimes" class="text-dark text-decoration-none">Crimes</a>
         <a href="/lab" class="text-dark text-decoration-none">Lab</a>
         <a href="/equipment" class="text-dark text-decoration-none">Équipement</a>
 

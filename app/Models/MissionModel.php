@@ -27,6 +27,7 @@ class MissionModel extends Model
         'buy_item'      => 'Acheter un item',
         'equip_slot'    => 'Equiper un slot',
         'spend_credits' => 'Depenser N credits cumules',
+        'commit_crime'  => 'Reussir un crime (slug crime ou slug categorie)',
     ];
 
     /** Types ou objective_target n'a pas de sens (any). */

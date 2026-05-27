@@ -18,10 +18,10 @@ $class   = match ($variant) {
     <?php if (is_array($message)): ?>
         <ul class="mb-0 ps-3">
             <?php foreach ($message as $m): ?>
-                <li><?= esc((string) $m) ?></li>
+                <li><?= nl2br(esc((string) $m)) ?></li>
             <?php endforeach ?>
         </ul>
     <?php else: ?>
-        <?= esc((string) $message) ?>
+        <?= nl2br(esc((string) $message)) ?>
     <?php endif ?>
 </div>

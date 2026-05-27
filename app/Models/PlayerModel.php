@@ -28,7 +28,14 @@ class PlayerModel extends Model
         'stat_reflexes',
         'stat_hack',
         'in_hospital_until',
+        'in_jail_until',
     ];
+
+    /** Couts et probas de l'evasion solo depuis la prison. */
+    public const ESCAPE_NERVE_COST           = 10;
+    public const ESCAPE_BASE_PCT             = 20;
+    public const ESCAPE_MAX_PCT              = 75;
+    public const ESCAPE_FAIL_PENALTY_MINUTES = 5;
 
     /** Coût en énergie d'un entraînement (1 ligne = 1 endroit pour ajuster). */
     public const TRAIN_ENERGY_COST = 5;
@@ -177,5 +184,65 @@ class PlayerModel extends Model
             'level' => $level,
             'xp'    => $xp,
         ]);
+    }
+
+    /**
+     * Tentative d'evasion depuis la prison. Coute ESCAPE_NERVE_COST nerve.
+     * Roll : ESCAPE_BASE_PCT + reflexes / 2, cape a ESCAPE_MAX_PCT.
+     * - Succes : in_jail_until vide a maintenant.
+     * - Echec : ESCAPE_FAIL_PENALTY_MINUTES ajoutees a la peine.
+     *
+     * @return array{ok: bool, message: string, escaped?: bool, success_pct?: int}
+     */
+    public function attemptEscape(int $playerId): array
+    {
+        $player = $this->find($playerId);
+        if ($player === null) {
+            return ['ok' => false, 'message' => 'Joueur introuvable.'];
+        }
+
+        $now = Time::now();
+        if (empty($player['in_jail_until']) || Time::parse($player['in_jail_until'])->isBefore($now)) {
+            return ['ok' => false, 'message' => 'Tu n\'es pas en prison.'];
+        }
+
+        if ((int) $player['nerve_current'] < self::ESCAPE_NERVE_COST) {
+            return ['ok' => false, 'message' => 'Nerve insuffisante (' . self::ESCAPE_NERVE_COST . ' requise).'];
+        }
+
+        // Debit nerve atomique.
+        $affected = $this->builder()
+            ->where('id', $playerId)
+            ->where('nerve_current >=', self::ESCAPE_NERVE_COST)
+            ->update([
+                'nerve_current' => new \CodeIgniter\Database\RawSql('nerve_current - ' . self::ESCAPE_NERVE_COST),
+                'updated_at'    => $now->toDateTimeString(),
+            ]);
+        if (! $affected) {
+            return ['ok' => false, 'message' => 'Nerve insuffisante.'];
+        }
+
+        $successPct = min(self::ESCAPE_MAX_PCT, self::ESCAPE_BASE_PCT + (int) $player['stat_reflexes'] / 2);
+        $roll       = random_int(0, 99);
+
+        if ($roll < $successPct) {
+            $this->update($playerId, ['in_jail_until' => null]);
+            return [
+                'ok'          => true,
+                'message'     => 'Evasion reussie ! Tu file dans les egouts, libre.',
+                'escaped'     => true,
+                'success_pct' => (int) $successPct,
+            ];
+        }
+
+        $newUntil = Time::parse($player['in_jail_until'])->addMinutes(self::ESCAPE_FAIL_PENALTY_MINUTES)->toDateTimeString();
+        $this->update($playerId, ['in_jail_until' => $newUntil]);
+
+        return [
+            'ok'          => true,
+            'message'     => 'Tentative ratee. Les matons t\'ont rattrape, +' . self::ESCAPE_FAIL_PENALTY_MINUTES . ' minutes au compteur.',
+            'escaped'     => false,
+            'success_pct' => (int) $successPct,
+        ];
     }
 }

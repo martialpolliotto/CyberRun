@@ -63,8 +63,26 @@ $cell = static function (string $label, int $current, int $max, int $pct): strin
             </span>
         </div>
 
-        <?php if (! empty($player['in_hospital_until'])): ?>
-            <span class="ms-auto fw-bold text-uppercase">[ Cyberclinique ]</span>
+        <?php
+            $statuses = [];
+            $now = \CodeIgniter\I18n\Time::now();
+            if (! empty($player['in_hospital_until'])) {
+                $until = \CodeIgniter\I18n\Time::parse($player['in_hospital_until']);
+                if ($until->isAfter($now)) {
+                    $mins = max(0, (int) ceil(($until->getTimestamp() - $now->getTimestamp()) / 60));
+                    $statuses[] = '<a href="/profile" class="text-dark text-decoration-none fw-bold text-uppercase">[ Cyberclinique ' . $mins . 'm ]</a>';
+                }
+            }
+            if (! empty($player['in_jail_until'])) {
+                $until = \CodeIgniter\I18n\Time::parse($player['in_jail_until']);
+                if ($until->isAfter($now)) {
+                    $mins = max(0, (int) ceil(($until->getTimestamp() - $now->getTimestamp()) / 60));
+                    $statuses[] = '<a href="/jail" class="text-dark text-decoration-none fw-bold text-uppercase">[ Prison ' . $mins . 'm ]</a>';
+                }
+            }
+        ?>
+        <?php if ($statuses !== []): ?>
+            <span class="ms-auto d-flex gap-2"><?= implode(' ', $statuses) ?></span>
         <?php endif ?>
 
     </div>
