@@ -135,14 +135,63 @@ class Crimes extends BaseController
             return redirect()->back()->with('error', 'Texte vide, rien a ajouter.');
         }
 
-        model(CrimeTextModel::class)->insert([
-            'crime_id' => $id,
-            'outcome'  => $outcome,
-            'text'     => $text,
-        ]);
+        $data = $this->extractTextFields(['text' => $text, 'outcome' => $outcome]);
+        $data['crime_id'] = $id;
+
+        model(CrimeTextModel::class)->insert($data);
 
         return redirect()->to('/admin/crimes/' . $id . '/edit#texts')
             ->with('message', 'Variante "' . esc($outcome) . '" ajoutee.');
+    }
+
+    /** Met a jour une variante existante : texte + overrides eventuels. */
+    public function updateText(int $id, int $textId)
+    {
+        $textModel = model(CrimeTextModel::class);
+        $text      = $textModel->find($textId);
+        if ($text === null || (int) $text['crime_id'] !== $id) {
+            return redirect()->to('/admin/crimes/' . $id . '/edit')->with('error', 'Variante introuvable.');
+        }
+
+        $newText = trim((string) $this->request->getPost('text'));
+        if ($newText === '') {
+            return redirect()->to('/admin/crimes/' . $id . '/edit#texts')->with('error', 'Texte vide, modification refusee.');
+        }
+
+        $data = $this->extractTextFields([
+            'text'    => $newText,
+            'outcome' => (string) $text['outcome'],
+        ]);
+
+        $textModel->update($textId, $data);
+        return redirect()->to('/admin/crimes/' . $id . '/edit#texts')
+            ->with('message', 'Variante mise a jour.');
+    }
+
+    /**
+     * Helper : extrait les champs texte + overrides du POST.
+     * Un champ vide -> NULL (fallback aux valeurs du crime parent au runtime).
+     *
+     * @param array<string, mixed> $base
+     * @return array<string, mixed>
+     */
+    private function extractTextFields(array $base): array
+    {
+        $nullIfEmpty = fn ($v) => ($v === '' || $v === null) ? null : $v;
+        $intOrNull   = fn ($v) => ($v === '' || $v === null) ? null : max(0, (int) $v);
+
+        $dest = $this->request->getPost('critical_destination');
+        $destClean = in_array($dest, CrimeModel::CRITICAL_DESTINATIONS, true) ? $dest : null;
+
+        return array_merge($base, [
+            'reward_credits_min'   => $intOrNull($this->request->getPost('reward_credits_min')),
+            'reward_credits_max'   => $intOrNull($this->request->getPost('reward_credits_max')),
+            'reward_xp'            => $intOrNull($this->request->getPost('reward_xp')),
+            'reward_category_xp'   => $intOrNull($this->request->getPost('reward_category_xp')),
+            'critical_destination' => $nullIfEmpty($destClean),
+            'critical_minutes_min' => $intOrNull($this->request->getPost('critical_minutes_min')),
+            'critical_minutes_max' => $intOrNull($this->request->getPost('critical_minutes_max')),
+        ]);
     }
 
     /** Supprime une variante de texte. */

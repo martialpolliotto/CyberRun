@@ -170,8 +170,15 @@ class CrimeModel extends Model
 
         if ($rollCritical < $criticalPct) {
             // ---- Echec critique : hopital ou prison ----
-            $dest    = (string) $crime['critical_destination'];
-            $minutes = random_int((int) $crime['critical_minutes_min'], max((int) $crime['critical_minutes_min'], (int) $crime['critical_minutes_max']));
+            // On pioche d'abord la variante, qui peut override dest / minutes.
+            $variant = model(CrimeTextModel::class)->pickRandom((int) $crime['id'], 'critical');
+
+            $dest = $variant['critical_destination'] ?? $crime['critical_destination'];
+            $dest = in_array((string) $dest, self::CRITICAL_DESTINATIONS, true) ? (string) $dest : (string) $crime['critical_destination'];
+
+            $minMin = $variant['critical_minutes_min'] ?? $crime['critical_minutes_min'];
+            $minMax = $variant['critical_minutes_max'] ?? $crime['critical_minutes_max'];
+            $minutes = random_int((int) $minMin, max((int) $minMin, (int) $minMax));
             $until   = $now->addMinutes($minutes)->toDateTimeString();
 
             $updateField = $dest === 'hospital' ? 'in_hospital_until' : 'in_jail_until';
@@ -179,8 +186,7 @@ class CrimeModel extends Model
 
             $db->transComplete();
 
-            $picked    = model(CrimeTextModel::class)->pickRandom((int) $crime['id'], 'critical');
-            $narrative = $picked ?? 'Echec critique.';
+            $narrative = $variant['text'] ?? 'Echec critique.';
             $suffix    = $dest === 'hospital'
                 ? "\n\n→ Cyberclinique pour " . $minutes . ' minutes.'
                 : "\n\n→ Coffre pour " . $minutes . ' minutes.';
@@ -198,9 +204,14 @@ class CrimeModel extends Model
 
         if ($rollSuccess < $successPct) {
             // ---- Reussite ----
-            $credits = random_int((int) $crime['reward_credits_min'], max((int) $crime['reward_credits_min'], (int) $crime['reward_credits_max']));
-            $xp      = (int) $crime['reward_xp'];
-            $catXp   = (int) $crime['reward_category_xp'];
+            // On pioche d'abord la variante, qui peut override credits / xp.
+            $variant = model(CrimeTextModel::class)->pickRandom((int) $crime['id'], 'success');
+
+            $minC = $variant['reward_credits_min'] ?? $crime['reward_credits_min'];
+            $maxC = $variant['reward_credits_max'] ?? $crime['reward_credits_max'];
+            $credits = random_int((int) $minC, max((int) $minC, (int) $maxC));
+            $xp      = (int) ($variant['reward_xp']          ?? $crime['reward_xp']);
+            $catXp   = (int) ($variant['reward_category_xp'] ?? $crime['reward_category_xp']);
 
             if ($credits > 0) {
                 $playerModel->builder()
@@ -232,8 +243,7 @@ class CrimeModel extends Model
             $missionModel->trackEvent($playerId, 'commit_crime', (string) $category['slug']);
             $missionModel->recheckThresholdsForPlayer($playerId);
 
-            $picked    = model(CrimeTextModel::class)->pickRandom((int) $crime['id'], 'success');
-            $narrative = $picked ?? 'Reussite.';
+            $narrative = $variant['text'] ?? 'Reussite.';
             $suffix    = "\n\n→ +" . $credits . ' credits · +' . $xp . ' XP · +' . $catXp . ' XP ' . $category['name'];
 
             return [
@@ -251,8 +261,8 @@ class CrimeModel extends Model
         // ---- Echec simple : nerve depensee, rien d'autre ----
         $db->transComplete();
 
-        $picked    = model(CrimeTextModel::class)->pickRandom((int) $crime['id'], 'fail');
-        $narrative = $picked ?? 'Echec : la tentative a foire, tu rentres bredouille.';
+        $variant   = model(CrimeTextModel::class)->pickRandom((int) $crime['id'], 'fail');
+        $narrative = $variant['text'] ?? 'Echec : la tentative a foire, tu rentres bredouille.';
 
         return [
             'ok'           => true,

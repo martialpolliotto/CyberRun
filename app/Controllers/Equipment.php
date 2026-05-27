@@ -28,10 +28,14 @@ class Equipment extends BaseController
         $inventory = $piModel->findFullInventory((int) $player['id']);
 
         // 3 buckets : equipped (slot=>item), available (slot=>items[]), obsolete (items[] hors-circuit)
+        // Les consommables sont exclus (geres via /inventory, pas via /equipment).
         $equipped  = [];
         $available = [];
         $obsolete  = [];
         foreach ($inventory as $row) {
+            if (! empty($row['item_consumable_type'])) {
+                continue;
+            }
             if ((int) $row['item_discontinued'] === 1) {
                 $obsolete[] = $row;
                 continue;

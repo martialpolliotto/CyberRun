@@ -18,6 +18,14 @@ class ItemModel extends Model
         'starter',
         'discontinued', 'discontinued_at',
         'image_path', 'model_path',
+        // ---- Consommables ----
+        'consumable_type', 'cooldown_seconds',
+        'effect_hp', 'effect_nrg', 'effect_nrv',
+        'effect_force', 'effect_blindage', 'effect_reflexes', 'effect_hack',
+        'effect_hp_max', 'effect_nrg_max', 'effect_nrv_max',
+        'effect_duration_seconds',
+        'addiction_threshold_increase',
+        'overdose_chance_pct', 'overdose_hospital_min', 'overdose_hospital_max',
     ];
 
     /** Liste canonique des slots supportés (ordre = ordre d'affichage). */
@@ -29,6 +37,9 @@ class ItemModel extends Model
         'arme2'       => 'Arme secondaire',
         'cyberdeck'   => 'Cyberdeck',
     ];
+
+    /** Types de consommables (kind d'effet actif que ca peut produire). */
+    public const CONSUMABLE_TYPES = ['booster', 'drug'];
 
     public function findStarters(): array
     {

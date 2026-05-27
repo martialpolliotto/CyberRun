@@ -19,6 +19,9 @@ $routes->group('', ['filter' => 'session'], static function ($routes) {
     $routes->post('equipment/equip/(:num)', 'Equipment::equip/$1');
     $routes->post('equipment/unequip/(:segment)', 'Equipment::unequip/$1');
 
+    $routes->get('inventory', 'Inventory::index');
+    $routes->post('inventory/consume/(:num)', 'Inventory::consume/$1');
+
     $routes->get('shops', 'Shops::index');
     $routes->get('shop/(:segment)', 'Shops::show/$1');
     $routes->post('shop/(:segment)/buy/(:num)', 'Shops::buy/$1/$2');
@@ -80,6 +83,7 @@ $routes->group('admin', ['filter' => ['session', 'group:admin'], 'namespace' => 
     $routes->get('crimes/(:num)/edit',      'Crimes::edit/$1');
     $routes->post('crimes/(:num)/save',     'Crimes::save/$1');
     $routes->post('crimes/(:num)/destroy',  'Crimes::destroy/$1');
-    $routes->post('crimes/(:num)/texts/add',          'Crimes::addText/$1');
+    $routes->post('crimes/(:num)/texts/add',            'Crimes::addText/$1');
+    $routes->post('crimes/(:num)/texts/(:num)/save',    'Crimes::updateText/$1/$2');
     $routes->post('crimes/(:num)/texts/(:num)/destroy', 'Crimes::deleteText/$1/$2');
 });

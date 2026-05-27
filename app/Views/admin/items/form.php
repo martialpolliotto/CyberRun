@@ -13,7 +13,7 @@
 
 <?= $this->section('content') ?>
 
-<div class="mx-auto" style="max-width: 48rem;">
+<div class="mx-auto" style="max-width: 80rem;">
 
     <div class="alert alert-dark py-2 mb-3 d-flex align-items-center gap-2">
         <span class="fw-bold text-uppercase">[ ADMIN ]</span>
@@ -110,6 +110,84 @@
                             <input id="<?= $field ?>" type="number" name="<?= $field ?>" value="<?= (int) $val($field, 0) ?>" class="form-control font-monospace">
                         </div>
                     <?php endforeach ?>
+                </div>
+            </div>
+        </div>
+
+        <!-- Consommable (optionnel) -->
+        <div class="card mb-3">
+            <div class="card-header bg-light small text-uppercase fw-semibold">Consommable (optionnel)</div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label for="consumable_type" class="form-label small">Type</label>
+                        <select id="consumable_type" name="consumable_type" class="form-select">
+                            <?php $ct = (string) $val('consumable_type', ''); ?>
+                            <option value="">— non consommable (item d'équipement) —</option>
+                            <option value="booster" <?= $ct === 'booster' ? 'selected' : '' ?>>Booster (petit bonus, peu de risques)</option>
+                            <option value="drug"    <?= $ct === 'drug'    ? 'selected' : '' ?>>Drogue (gros bonus, overdose + addiction)</option>
+                        </select>
+                        <div class="form-text">Si rempli, l'item ne pourra pas être équipé et apparaîtra dans /inventory.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="cooldown_seconds" class="form-label small">Cooldown (secondes)</label>
+                        <input id="cooldown_seconds" type="number" name="cooldown_seconds" min="0" value="<?= (int) $val('cooldown_seconds', 0) ?>" class="form-control font-monospace">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="effect_duration_seconds" class="form-label small">Durée effet temporaire (sec.)</label>
+                        <input id="effect_duration_seconds" type="number" name="effect_duration_seconds" min="0" value="<?= (int) $val('effect_duration_seconds', 0) ?>" class="form-control font-monospace">
+                        <div class="form-text">0 = pas d'effet temporaire (juste regen instant).</div>
+                    </div>
+                </div>
+
+                <div class="small text-uppercase text-muted fw-semibold mb-2">Regen instantanée (sans durée)</div>
+                <div class="row g-3 mb-3">
+                    <?php foreach (['effect_hp' => 'HP', 'effect_nrg' => 'NRG', 'effect_nrv' => 'NRV'] as $field => $label): ?>
+                        <div class="col-md-4">
+                            <label for="<?= $field ?>" class="form-label small">+<?= esc($label) ?></label>
+                            <input id="<?= $field ?>" type="number" name="<?= $field ?>" value="<?= (int) $val($field, 0) ?>" class="form-control font-monospace">
+                        </div>
+                    <?php endforeach ?>
+                </div>
+
+                <div class="small text-uppercase text-muted fw-semibold mb-2">Bonus temporaire de stat (additif sur la durée)</div>
+                <div class="row g-3 mb-3">
+                    <?php foreach (['effect_force' => 'Force', 'effect_blindage' => 'Blindage', 'effect_reflexes' => 'Réflexes', 'effect_hack' => 'Hack'] as $field => $label): ?>
+                        <div class="col-6 col-md-3">
+                            <label for="<?= $field ?>" class="form-label small">+<?= esc($label) ?></label>
+                            <input id="<?= $field ?>" type="number" name="<?= $field ?>" value="<?= (int) $val($field, 0) ?>" class="form-control font-monospace">
+                        </div>
+                    <?php endforeach ?>
+                </div>
+
+                <div class="small text-uppercase text-muted fw-semibold mb-2">Bonus temporaire de stat max</div>
+                <div class="row g-3 mb-3">
+                    <?php foreach (['effect_hp_max' => 'HP max', 'effect_nrg_max' => 'NRG max', 'effect_nrv_max' => 'NRV max'] as $field => $label): ?>
+                        <div class="col-md-4">
+                            <label for="<?= $field ?>" class="form-label small">+<?= esc($label) ?></label>
+                            <input id="<?= $field ?>" type="number" name="<?= $field ?>" value="<?= (int) $val($field, 0) ?>" class="form-control font-monospace">
+                        </div>
+                    <?php endforeach ?>
+                </div>
+
+                <div class="small text-uppercase text-muted fw-semibold mb-2">Drogue : addiction et overdose</div>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="addiction_threshold_increase" class="form-label small">Addiction +</label>
+                        <input id="addiction_threshold_increase" type="number" name="addiction_threshold_increase" min="0" value="<?= (int) $val('addiction_threshold_increase', 0) ?>" class="form-control font-monospace">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="overdose_chance_pct" class="form-label small">Overdose %</label>
+                        <input id="overdose_chance_pct" type="number" name="overdose_chance_pct" min="0" max="99" value="<?= (int) $val('overdose_chance_pct', 0) ?>" class="form-control font-monospace">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="overdose_hospital_min" class="form-label small">Hôpital min (min.)</label>
+                        <input id="overdose_hospital_min" type="number" name="overdose_hospital_min" min="0" value="<?= (int) $val('overdose_hospital_min', 0) ?>" class="form-control font-monospace">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="overdose_hospital_max" class="form-label small">Hôpital max (min.)</label>
+                        <input id="overdose_hospital_max" type="number" name="overdose_hospital_max" min="0" value="<?= (int) $val('overdose_hospital_max', 0) ?>" class="form-control font-monospace">
+                    </div>
                 </div>
             </div>
         </div>

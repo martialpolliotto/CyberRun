@@ -2,7 +2,7 @@
 
 <?= $this->section('content') ?>
 
-<div class="mx-auto" style="max-width: 48rem;">
+<div class="mx-auto" style="max-width: 80rem;">
 
     <div class="alert alert-dark py-2 mb-3 d-flex align-items-center gap-2">
         <span class="fw-bold text-uppercase">[ ADMIN ]</span>

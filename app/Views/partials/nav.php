@@ -10,6 +10,7 @@
         <a href="/crimes" class="text-dark text-decoration-none">Crimes</a>
         <a href="/lab" class="text-dark text-decoration-none">Lab</a>
         <a href="/equipment" class="text-dark text-decoration-none">Équipement</a>
+        <a href="/inventory" class="text-dark text-decoration-none">Inventaire</a>
 
         <div class="dropdown">
             <button class="btn btn-sm btn-link text-dark text-decoration-none p-0 dropdown-toggle" type="button" data-bs-toggle="dropdown">

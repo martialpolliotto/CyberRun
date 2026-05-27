@@ -11,7 +11,12 @@ class CrimeTextModel extends Model
     protected $returnType    = 'array';
     protected $useTimestamps = true;
 
-    protected $allowedFields = ['crime_id', 'outcome', 'text'];
+    protected $allowedFields = [
+        'crime_id', 'outcome', 'text',
+        'reward_credits_min', 'reward_credits_max',
+        'reward_xp', 'reward_category_xp',
+        'critical_destination', 'critical_minutes_min', 'critical_minutes_max',
+    ];
 
     public const VALID_OUTCOMES = ['success', 'fail', 'critical'];
 
@@ -34,9 +39,12 @@ class CrimeTextModel extends Model
     }
 
     /**
-     * Pioche une variante au hasard pour (crime, outcome). Renvoie null si aucune n'existe.
+     * Pioche une variante au hasard pour (crime, outcome). Renvoie la row complete
+     * (texte + overrides eventuels) ou null si aucune variante n'existe.
+     *
+     * @return array<string, mixed>|null
      */
-    public function pickRandom(int $crimeId, string $outcome): ?string
+    public function pickRandom(int $crimeId, string $outcome): ?array
     {
         if (! in_array($outcome, self::VALID_OUTCOMES, true)) {
             return null;
@@ -45,6 +53,6 @@ class CrimeTextModel extends Model
             ->where('outcome', $outcome)
             ->orderBy('RAND()', '', false)
             ->first();
-        return $row['text'] ?? null;
+        return $row ?: null;
     }
 }

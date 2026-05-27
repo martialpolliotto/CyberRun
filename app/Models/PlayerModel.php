@@ -29,6 +29,10 @@ class PlayerModel extends Model
         'stat_hack',
         'in_hospital_until',
         'in_jail_until',
+        'addiction_level',
+        'addiction_updated_at',
+        'last_booster_at',
+        'last_drug_at',
     ];
 
     /** Couts et probas de l'evasion solo depuis la prison. */
@@ -36,6 +40,9 @@ class PlayerModel extends Model
     public const ESCAPE_BASE_PCT             = 20;
     public const ESCAPE_MAX_PCT              = 75;
     public const ESCAPE_FAIL_PENALTY_MINUTES = 5;
+
+    /** Decay journalier du seuil de dependance (points par jour ecoule depuis le dernier check). */
+    public const ADDICTION_DAILY_DECAY = 10;
 
     /** Coût en énergie d'un entraînement (1 ligne = 1 endroit pour ajuster). */
     public const TRAIN_ENERGY_COST = 5;
@@ -56,11 +63,12 @@ class PlayerModel extends Model
     }
 
     /**
-     * Calcule les stats effectives (base + bonus des items équipés).
+     * Calcule les stats effectives (base + bonus des items équipés + bonus des effets actifs).
      *
      * @return array{
      *   base: array{force:int,blindage:int,reflexes:int,hack:int},
      *   bonus: array{force:int,blindage:int,reflexes:int,hack:int},
+     *   active: array{force:int,blindage:int,reflexes:int,hack:int},
      *   total: array{force:int,blindage:int,reflexes:int,hack:int}
      * }
      */
@@ -69,7 +77,7 @@ class PlayerModel extends Model
         $player = $this->find($playerId);
         if ($player === null) {
             $zero = ['force' => 0, 'blindage' => 0, 'reflexes' => 0, 'hack' => 0];
-            return ['base' => $zero, 'bonus' => $zero, 'total' => $zero];
+            return ['base' => $zero, 'bonus' => $zero, 'active' => $zero, 'total' => $zero];
         }
 
         $base = [
@@ -99,12 +107,21 @@ class PlayerModel extends Model
             'hack'     => (int) ($row->bh ?? 0),
         ];
 
+        // Bonus temporaires depuis les effets actifs (drogues + boosters).
+        $effects = model(PlayerActiveEffectModel::class)->aggregateBonuses($playerId);
+        $active = [
+            'force'    => $effects['force'],
+            'blindage' => $effects['blindage'],
+            'reflexes' => $effects['reflexes'],
+            'hack'     => $effects['hack'],
+        ];
+
         $total = [];
         foreach ($base as $k => $v) {
-            $total[$k] = $v + $bonus[$k];
+            $total[$k] = $v + $bonus[$k] + $active[$k];
         }
 
-        return ['base' => $base, 'bonus' => $bonus, 'total' => $total];
+        return ['base' => $base, 'bonus' => $bonus, 'active' => $active, 'total' => $total];
     }
 
     /**
@@ -244,5 +261,193 @@ class PlayerModel extends Model
             'escaped'     => false,
             'success_pct' => (int) $successPct,
         ];
+    }
+
+    /**
+     * Decay lazy de l'addiction : on calcule combien de jours se sont ecoules depuis le
+     * dernier check, on retire ADDICTION_DAILY_DECAY x jours, et on met a jour l'horodatage.
+     *
+     * Appele systematiquement avant toute modification d'addiction (consume notamment).
+     */
+    public function decayAddiction(int $playerId): void
+    {
+        $player = $this->find($playerId);
+        if ($player === null) {
+            return;
+        }
+        $now = Time::now();
+        if (empty($player['addiction_updated_at'])) {
+            // Init silencieux, pas de decay au premier passage.
+            $this->update($playerId, ['addiction_updated_at' => $now->toDateTimeString()]);
+            return;
+        }
+        $elapsed = $now->getTimestamp() - Time::parse($player['addiction_updated_at'])->getTimestamp();
+        $days    = intdiv($elapsed, 86400);
+        if ($days <= 0) {
+            return; // Pas encore un jour entier ecoule.
+        }
+        $newLevel = max(0, (int) $player['addiction_level'] - $days * self::ADDICTION_DAILY_DECAY);
+        // On avance l'horodatage du nombre exact de jours decayes (le reste s'accumule).
+        $newUpdated = Time::parse($player['addiction_updated_at'])->addDays($days)->toDateTimeString();
+        $this->update($playerId, [
+            'addiction_level'      => $newLevel,
+            'addiction_updated_at' => $newUpdated,
+        ]);
+    }
+
+    /**
+     * Consomme un item de l'inventaire du joueur. Applique :
+     *  - cooldown (par kind : booster | drug)
+     *  - empechement si effet du meme kind deja actif
+     *  - decay addiction (lazy)
+     *  - roll overdose pour drogue
+     *  - regen instantanee HP/NRG/NRV (capee aux max courants)
+     *  - effet temporaire (insert/update player_active_effects) si duration > 0
+     *  - increment addiction pour drogue
+     *  - decrement de l'item dans l'inventaire (quantity-- ou suppression)
+     *
+     * @return array{ok: bool, message: string, outcome?: string}
+     */
+    public function consume(int $playerId, int $playerItemId): array
+    {
+        $now = Time::now();
+
+        // Recupere item joint a player_item pour avoir les effets + ownership.
+        $row = $this->db->table('player_items pi')
+            ->select('pi.*, i.id AS item_id, i.name AS item_name, i.consumable_type, i.cooldown_seconds,
+                      i.effect_hp, i.effect_nrg, i.effect_nrv,
+                      i.effect_force, i.effect_blindage, i.effect_reflexes, i.effect_hack,
+                      i.effect_hp_max, i.effect_nrg_max, i.effect_nrv_max,
+                      i.effect_duration_seconds,
+                      i.addiction_threshold_increase,
+                      i.overdose_chance_pct, i.overdose_hospital_min, i.overdose_hospital_max,
+                      i.discontinued')
+            ->join('items i', 'i.id = pi.item_id', 'inner')
+            ->where('pi.id', $playerItemId)
+            ->where('pi.player_id', $playerId)
+            ->get()->getRowArray();
+
+        if ($row === null) {
+            return ['ok' => false, 'message' => 'Item introuvable dans ton inventaire.'];
+        }
+        if ((int) $row['discontinued'] === 1) {
+            return ['ok' => false, 'message' => 'Item hors-circuit, impossible a consommer.'];
+        }
+        $kind = $row['consumable_type'] ?? null;
+        if (! in_array($kind, ItemModel::CONSUMABLE_TYPES, true)) {
+            return ['ok' => false, 'message' => 'Cet item n\'est pas consommable.'];
+        }
+
+        // Empechement : ne pas consommer en prison ni a l'hopital.
+        $player = $this->find($playerId);
+        if (! empty($player['in_hospital_until']) && Time::parse($player['in_hospital_until'])->isAfter($now)) {
+            return ['ok' => false, 'message' => 'Tu es a la cyberclinique, impossible de consommer quoi que ce soit.'];
+        }
+        if (! empty($player['in_jail_until']) && Time::parse($player['in_jail_until'])->isAfter($now)) {
+            return ['ok' => false, 'message' => 'Tu es en prison, on t\'a fouille, rien sur toi.'];
+        }
+
+        // Cooldown par kind.
+        $lastField = $kind === 'drug' ? 'last_drug_at' : 'last_booster_at';
+        if (! empty($player[$lastField])) {
+            $nextAllowed = Time::parse($player[$lastField])->addSeconds((int) $row['cooldown_seconds']);
+            if ($nextAllowed->isAfter($now)) {
+                $remaining = $nextAllowed->getTimestamp() - $now->getTimestamp();
+                $mins = (int) ceil($remaining / 60);
+                return ['ok' => false, 'message' => 'Cooldown ' . esc($kind) . ' : encore ' . $mins . ' min a attendre.'];
+            }
+        }
+
+        // Verifie qu'aucun effet du meme kind n'est deja actif.
+        $effectsModel = model(PlayerActiveEffectModel::class);
+        if ($effectsModel->hasActive($playerId, $kind)) {
+            return ['ok' => false, 'message' => 'Tu es deja sous l\'effet d\'un ' . esc($kind) . '. Attends qu\'il termine.'];
+        }
+
+        // Decay lazy avant toute modif d'addiction.
+        $this->decayAddiction($playerId);
+        $player = $this->find($playerId);
+
+        $db = db_connect();
+        $db->transStart();
+
+        // ---- Roll overdose pour les drogues ----
+        if ($kind === 'drug' && (int) $row['overdose_chance_pct'] > 0) {
+            if (random_int(0, 99) < (int) $row['overdose_chance_pct']) {
+                $minM = (int) $row['overdose_hospital_min'];
+                $maxM = max($minM, (int) $row['overdose_hospital_max']);
+                $minutes = random_int($minM, $maxM);
+                $until   = $now->addMinutes($minutes)->toDateTimeString();
+
+                $this->update($playerId, [
+                    'in_hospital_until' => $until,
+                    $lastField          => $now->toDateTimeString(),
+                    'addiction_level'   => (int) $player['addiction_level'] + (int) $row['addiction_threshold_increase'],
+                ]);
+                // L'item est tout de meme consomme.
+                $this->consumeOneFromInventory($playerItemId, (int) $row['quantity']);
+
+                $db->transComplete();
+                return [
+                    'ok'      => true,
+                    'message' => 'OVERDOSE. Cyberclinique pour ' . $minutes . ' minutes.',
+                    'outcome' => 'overdose',
+                ];
+            }
+        }
+
+        // ---- Regen instantanee ----
+        $newHp  = min((int) $player['hp_max'],     (int) $player['hp_current']     + (int) $row['effect_hp']);
+        $newNrg = min((int) $player['energy_max'], (int) $player['energy_current'] + (int) $row['effect_nrg']);
+        $newNrv = min((int) $player['nerve_max'],  (int) $player['nerve_current']  + (int) $row['effect_nrv']);
+
+        $updates = [
+            'hp_current'     => $newHp,
+            'energy_current' => $newNrg,
+            'nerve_current'  => $newNrv,
+            $lastField       => $now->toDateTimeString(),
+        ];
+        if ($kind === 'drug' && (int) $row['addiction_threshold_increase'] > 0) {
+            $updates['addiction_level'] = (int) $player['addiction_level'] + (int) $row['addiction_threshold_increase'];
+        }
+        $this->update($playerId, $updates);
+
+        // ---- Effet temporaire (stat ou stat max) ----
+        $hasTemporary = (int) $row['effect_duration_seconds'] > 0 && (
+            $row['effect_force'] || $row['effect_blindage'] || $row['effect_reflexes'] || $row['effect_hack']
+            || $row['effect_hp_max'] || $row['effect_nrg_max'] || $row['effect_nrv_max']
+        );
+        if ($hasTemporary) {
+            $expiresAt = $now->addSeconds((int) $row['effect_duration_seconds']);
+            $effectsModel->setOrReplace($playerId, $kind, (int) $row['item_id'], $expiresAt);
+        }
+
+        // ---- Decrement de l'inventaire ----
+        $this->consumeOneFromInventory($playerItemId, (int) $row['quantity']);
+
+        $db->transComplete();
+
+        $bits = [];
+        if ((int) $row['effect_hp']  > 0) $bits[] = '+' . (int) $row['effect_hp']  . ' HP';
+        if ((int) $row['effect_nrg'] > 0) $bits[] = '+' . (int) $row['effect_nrg'] . ' NRG';
+        if ((int) $row['effect_nrv'] > 0) $bits[] = '+' . (int) $row['effect_nrv'] . ' NRV';
+        if ($hasTemporary) $bits[] = 'effet temporaire actif';
+
+        return [
+            'ok'      => true,
+            'message' => esc($row['item_name']) . ' consomme.' . ($bits === [] ? '' : ' (' . implode(', ', $bits) . ')'),
+            'outcome' => 'consumed',
+        ];
+    }
+
+    /** Decremente la quantite d'un player_item de 1, supprime la ligne si on tombe a 0. */
+    private function consumeOneFromInventory(int $playerItemId, int $currentQuantity): void
+    {
+        $piModel = model(PlayerItemModel::class);
+        if ($currentQuantity <= 1) {
+            $piModel->delete($playerItemId);
+        } else {
+            $piModel->update($playerItemId, ['quantity' => $currentQuantity - 1]);
+        }
     }
 }

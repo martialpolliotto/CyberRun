@@ -66,6 +66,9 @@ class Items extends BaseController
             return redirect()->to('/admin/items')->with('error', 'Item introuvable.');
         }
 
+        $consumableType = $this->request->getPost('consumable_type');
+        $consumableType = in_array($consumableType, ItemModel::CONSUMABLE_TYPES, true) ? $consumableType : null;
+
         $data = [
             'slug'           => trim($this->request->getPost('slug') ?? ''),
             'name'           => trim($this->request->getPost('name') ?? ''),
@@ -78,6 +81,24 @@ class Items extends BaseController
             'starter'        => $this->request->getPost('starter') ? 1 : 0,
             'vendor_id'      => $this->request->getPost('vendor_id') !== '' ? (int) $this->request->getPost('vendor_id') : null,
             'price'          => max(0, (int) $this->request->getPost('price')),
+            // Consommables
+            'consumable_type'              => $consumableType,
+            'cooldown_seconds'             => max(0, (int) $this->request->getPost('cooldown_seconds')),
+            'effect_hp'                    => (int) $this->request->getPost('effect_hp'),
+            'effect_nrg'                   => (int) $this->request->getPost('effect_nrg'),
+            'effect_nrv'                   => (int) $this->request->getPost('effect_nrv'),
+            'effect_force'                 => (int) $this->request->getPost('effect_force'),
+            'effect_blindage'              => (int) $this->request->getPost('effect_blindage'),
+            'effect_reflexes'              => (int) $this->request->getPost('effect_reflexes'),
+            'effect_hack'                  => (int) $this->request->getPost('effect_hack'),
+            'effect_hp_max'                => (int) $this->request->getPost('effect_hp_max'),
+            'effect_nrg_max'               => (int) $this->request->getPost('effect_nrg_max'),
+            'effect_nrv_max'               => (int) $this->request->getPost('effect_nrv_max'),
+            'effect_duration_seconds'      => max(0, (int) $this->request->getPost('effect_duration_seconds')),
+            'addiction_threshold_increase' => max(0, (int) $this->request->getPost('addiction_threshold_increase')),
+            'overdose_chance_pct'          => max(0, min(99, (int) $this->request->getPost('overdose_chance_pct'))),
+            'overdose_hospital_min'        => max(0, (int) $this->request->getPost('overdose_hospital_min')),
+            'overdose_hospital_max'        => max(0, (int) $this->request->getPost('overdose_hospital_max')),
         ];
 
         // Validation manuelle simple (on évitera CI4 Validation pour MVP).

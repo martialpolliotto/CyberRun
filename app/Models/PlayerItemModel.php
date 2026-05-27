@@ -21,7 +21,7 @@ class PlayerItemModel extends Model
      */
     public function findFullInventory(int $playerId): array
     {
-        return $this->select('player_items.*, items.slug AS item_slug, items.name AS item_name, items.slot AS item_slot, items.description AS item_description, items.bonus_force, items.bonus_blindage, items.bonus_reflexes, items.bonus_hack, items.discontinued AS item_discontinued, items.image_path, items.model_path')
+        return $this->select('player_items.*, items.slug AS item_slug, items.name AS item_name, items.slot AS item_slot, items.description AS item_description, items.bonus_force, items.bonus_blindage, items.bonus_reflexes, items.bonus_hack, items.discontinued AS item_discontinued, items.consumable_type AS item_consumable_type, items.image_path, items.model_path')
             ->join('items', 'items.id = player_items.item_id', 'inner')
             ->where('player_items.player_id', $playerId)
             ->orderBy('items.slot')

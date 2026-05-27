@@ -12,7 +12,7 @@
 
 <?= $this->section('content') ?>
 
-<div class="mx-auto" style="max-width: 56rem;">
+<div class="mx-auto" style="max-width: 80rem;">
 
     <div class="alert alert-dark py-2 mb-3 d-flex align-items-center gap-2">
         <span class="fw-bold text-uppercase">[ ADMIN ]</span>
@@ -158,50 +158,233 @@
     <?php if ($isEdit): ?>
         <?php
             $outcomeLabels = [
-                'success'  => ['Réussite',         'Affiché quand la tentative réussit. Les chiffres (crédits, XP) sont ajoutés automatiquement après le texte. Une variante au hasard sera piochée à chaque tentative.'],
-                'fail'     => ['Échec simple',     'Affiché quand le crime rate sans conséquence sérieuse (juste la nerve consommée). Une variante au hasard sera piochée.'],
-                'critical' => ['Échec critique',   'Affiché quand le joueur part en prison ou à la cyberclinique. La destination + durée sont ajoutées automatiquement.'],
+                'success'  => ['Réussite',        'bg-dark'],
+                'fail'     => ['Échec',           'bg-secondary'],
+                'critical' => ['Critique',        'bg-black'],
             ];
+
+            // Aplatit toutes les variantes en une seule liste pour le tableau unifié.
+            $allTexts = [];
+            foreach (['success', 'fail', 'critical'] as $k) {
+                foreach ($texts[$k] as $t) {
+                    $t['outcome'] = $k;
+                    $allTexts[] = $t;
+                }
+            }
+
+            $truncate = static function (string $s, int $len = 80): string {
+                $s = trim(preg_replace('/\s+/', ' ', $s));
+                return mb_strlen($s) > $len ? mb_substr($s, 0, $len - 1) . '…' : $s;
+            };
+
+            // Formate une cellule range "min–max" en override, ou "—" si pas override.
+            $fmtRange = static function ($min, $max): string {
+                if ($min === null && $max === null) return '<span class="text-muted">—</span>';
+                $a = $min ?? '?';
+                $b = $max ?? '?';
+                return '<span class="font-monospace">' . esc((string) $a) . '–' . esc((string) $b) . '</span>';
+            };
+            $fmtOne = static function ($v): string {
+                if ($v === null) return '<span class="text-muted">—</span>';
+                return '<span class="font-monospace">' . esc((string) $v) . '</span>';
+            };
         ?>
+
         <h2 id="texts" class="h5 mt-4 mb-2">Scénarios narratifs</h2>
-        <p class="small text-muted mb-3">Tu peux ajouter <strong>plusieurs variantes</strong> par issue. Le système en pioche une au hasard à chaque tentative.</p>
+        <p class="small text-muted mb-3">
+            Une variante par ligne. Le système pioche au hasard parmi les variantes du bon type à chaque tentative.
+            Les colonnes <strong>récompenses/durée</strong> sont des <em>overrides</em> de la variante : si elles sont vides (—), le crime utilise ses valeurs par défaut
+            (¢<?= (int) $crime['reward_credits_min'] ?>–<?= (int) $crime['reward_credits_max'] ?>, +<?= (int) $crime['reward_xp'] ?> XP, +<?= (int) $crime['reward_category_xp'] ?> cat, critique → <?= esc($crime['critical_destination']) ?> <?= (int) $crime['critical_minutes_min'] ?>–<?= (int) $crime['critical_minutes_max'] ?> min).
+        </p>
 
-        <?php foreach ($outcomeLabels as $key => [$label, $help]): ?>
-            <div class="card mb-3">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <span class="small text-uppercase fw-semibold"><?= esc($label) ?></span>
-                    <span class="badge bg-dark"><?= count($texts[$key]) ?> variante<?= count($texts[$key]) > 1 ? 's' : '' ?></span>
-                </div>
-                <div class="card-body">
-                    <p class="form-text mb-3"><?= esc($help) ?></p>
+        <div class="mb-3">
+            <button type="button" class="btn btn-dark btn-sm" data-bs-toggle="modal" data-bs-target="#modal-add-text">+ Ajouter une variante</button>
+        </div>
 
-                    <?php if (empty($texts[$key])): ?>
-                        <p class="text-muted fst-italic small mb-3">Aucune variante. Si tu n'en ajoutes pas, un texte par défaut générique sera affiché au joueur.</p>
-                    <?php else: ?>
-                        <ul class="list-group mb-3">
-                            <?php foreach ($texts[$key] as $t): ?>
-                                <li class="list-group-item d-flex justify-content-between align-items-start gap-3">
-                                    <div class="flex-grow-1" style="white-space: pre-wrap;"><?= esc($t['text']) ?></div>
-                                    <form method="post" action="/admin/crimes/<?= (int) $crime['id'] ?>/texts/<?= (int) $t['id'] ?>/destroy" class="m-0" onsubmit="return confirm('Supprimer cette variante ?')">
-                                        <?= csrf_field() ?>
-                                        <button type="submit" class="btn btn-sm btn-outline-dark">supprimer</button>
-                                    </form>
-                                </li>
-                            <?php endforeach ?>
-                        </ul>
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle bg-white small">
+                <thead class="table-light">
+                    <tr>
+                        <th>Type</th>
+                        <th>Texte</th>
+                        <th>Crédits</th>
+                        <th>XP</th>
+                        <th>XP cat.</th>
+                        <th>Dest. crit.</th>
+                        <th>Min. crit.</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if ($allTexts === []): ?>
+                        <tr><td colspan="8" class="text-center text-muted fst-italic">Aucune variante. Sans variante, un texte par défaut générique sera affiché.</td></tr>
                     <?php endif ?>
+                    <?php foreach ($allTexts as $t): ?>
+                        <?php [$label, $bg] = $outcomeLabels[$t['outcome']]; ?>
+                        <tr>
+                            <td><span class="badge <?= esc($bg) ?>"><?= esc($label) ?></span></td>
+                            <td><?= esc($truncate((string) $t['text'])) ?></td>
+                            <td><?= $fmtRange($t['reward_credits_min'] ?? null, $t['reward_credits_max'] ?? null) ?></td>
+                            <td><?= $fmtOne($t['reward_xp'] ?? null) ?></td>
+                            <td><?= $fmtOne($t['reward_category_xp'] ?? null) ?></td>
+                            <td><?= $t['outcome'] === 'critical' ? ($t['critical_destination'] !== null ? '<span class="font-monospace">' . esc($t['critical_destination']) . '</span>' : '<span class="text-muted">—</span>') : '<span class="text-muted">·</span>' ?></td>
+                            <td><?= $t['outcome'] === 'critical' ? $fmtRange($t['critical_minutes_min'] ?? null, $t['critical_minutes_max'] ?? null) : '<span class="text-muted">·</span>' ?></td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modal-text-<?= (int) $t['id'] ?>">Modifier</button>
+                                <form method="post" action="/admin/crimes/<?= (int) $crime['id'] ?>/texts/<?= (int) $t['id'] ?>/destroy" class="d-inline m-0" onsubmit="return confirm('Supprimer cette variante ?')">
+                                    <?= csrf_field() ?>
+                                    <button type="submit" class="btn btn-sm btn-outline-dark">×</button>
+                                </form>
+                            </td>
+                        </tr>
+                    <?php endforeach ?>
+                </tbody>
+            </table>
+        </div>
 
-                    <form method="post" action="/admin/crimes/<?= (int) $crime['id'] ?>/texts/add">
-                        <?= csrf_field() ?>
-                        <input type="hidden" name="outcome" value="<?= esc($key) ?>">
-                        <div class="mb-2">
-                            <textarea name="text" rows="3" class="form-control" placeholder="Nouvelle variante…" required></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-dark btn-sm">+ Ajouter cette variante</button>
-                    </form>
+        <!-- Modale d'édition par variante -->
+        <?php foreach ($allTexts as $t): ?>
+            <?php [$label] = $outcomeLabels[$t['outcome']]; ?>
+            <div class="modal fade" id="modal-text-<?= (int) $t['id'] ?>" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <form method="post" action="/admin/crimes/<?= (int) $crime['id'] ?>/texts/<?= (int) $t['id'] ?>/save">
+                            <?= csrf_field() ?>
+                            <div class="modal-header">
+                                <h5 class="modal-title">Variante <?= esc($label) ?> · #<?= (int) $t['id'] ?></h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label small">Texte affiché au joueur</label>
+                                    <textarea name="text" rows="5" class="form-control" required><?= esc($t['text']) ?></textarea>
+                                </div>
+
+                                <p class="form-text mb-2">Les champs ci-dessous sont des <strong>overrides</strong>. Laisse vide pour utiliser la valeur par défaut du crime.</p>
+
+                                <?php if ($t['outcome'] === 'success'): ?>
+                                    <div class="row g-2">
+                                        <div class="col-md-3">
+                                            <label class="form-label small">Crédits min</label>
+                                            <input type="number" name="reward_credits_min" min="0" value="<?= $t['reward_credits_min'] !== null ? (int) $t['reward_credits_min'] : '' ?>" class="form-control" placeholder="<?= (int) $crime['reward_credits_min'] ?>">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small">Crédits max</label>
+                                            <input type="number" name="reward_credits_max" min="0" value="<?= $t['reward_credits_max'] !== null ? (int) $t['reward_credits_max'] : '' ?>" class="form-control" placeholder="<?= (int) $crime['reward_credits_max'] ?>">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small">XP joueur</label>
+                                            <input type="number" name="reward_xp" min="0" value="<?= $t['reward_xp'] !== null ? (int) $t['reward_xp'] : '' ?>" class="form-control" placeholder="<?= (int) $crime['reward_xp'] ?>">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small">XP catégorie</label>
+                                            <input type="number" name="reward_category_xp" min="0" value="<?= $t['reward_category_xp'] !== null ? (int) $t['reward_category_xp'] : '' ?>" class="form-control" placeholder="<?= (int) $crime['reward_category_xp'] ?>">
+                                        </div>
+                                    </div>
+                                <?php elseif ($t['outcome'] === 'critical'): ?>
+                                    <div class="row g-2">
+                                        <div class="col-md-4">
+                                            <label class="form-label small">Destination</label>
+                                            <select name="critical_destination" class="form-select">
+                                                <option value="">— défaut (<?= esc($crime['critical_destination']) ?>) —</option>
+                                                <option value="jail"     <?= ($t['critical_destination'] ?? '') === 'jail' ? 'selected' : '' ?>>Prison</option>
+                                                <option value="hospital" <?= ($t['critical_destination'] ?? '') === 'hospital' ? 'selected' : '' ?>>Cyberclinique</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small">Minutes min</label>
+                                            <input type="number" name="critical_minutes_min" min="0" value="<?= $t['critical_minutes_min'] !== null ? (int) $t['critical_minutes_min'] : '' ?>" class="form-control" placeholder="<?= (int) $crime['critical_minutes_min'] ?>">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small">Minutes max</label>
+                                            <input type="number" name="critical_minutes_max" min="0" value="<?= $t['critical_minutes_max'] !== null ? (int) $t['critical_minutes_max'] : '' ?>" class="form-control" placeholder="<?= (int) $crime['critical_minutes_max'] ?>">
+                                        </div>
+                                    </div>
+                                <?php else: ?>
+                                    <p class="text-muted small fst-italic mb-0">L'échec simple n'a pas de récompense ni de conséquence — seul le texte est éditable.</p>
+                                <?php endif ?>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                                <button type="submit" class="btn btn-dark">Sauvegarder</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         <?php endforeach ?>
+
+        <!-- Modale d'ajout -->
+        <div class="modal fade" id="modal-add-text" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <form method="post" action="/admin/crimes/<?= (int) $crime['id'] ?>/texts/add">
+                        <?= csrf_field() ?>
+                        <div class="modal-header">
+                            <h5 class="modal-title">Nouvelle variante</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label small">Type d'issue</label>
+                                <select name="outcome" required class="form-select">
+                                    <option value="success">Réussite</option>
+                                    <option value="fail">Échec simple</option>
+                                    <option value="critical">Échec critique</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small">Texte affiché au joueur</label>
+                                <textarea name="text" rows="5" class="form-control" required></textarea>
+                            </div>
+
+                            <p class="form-text mb-2">Les champs ci-dessous sont des overrides. Laisse vide pour utiliser les valeurs du crime parent.</p>
+
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-3">
+                                    <label class="form-label small">Crédits min</label>
+                                    <input type="number" name="reward_credits_min" min="0" class="form-control" placeholder="<?= (int) $crime['reward_credits_min'] ?>">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">Crédits max</label>
+                                    <input type="number" name="reward_credits_max" min="0" class="form-control" placeholder="<?= (int) $crime['reward_credits_max'] ?>">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">XP joueur</label>
+                                    <input type="number" name="reward_xp" min="0" class="form-control" placeholder="<?= (int) $crime['reward_xp'] ?>">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">XP catégorie</label>
+                                    <input type="number" name="reward_category_xp" min="0" class="form-control" placeholder="<?= (int) $crime['reward_category_xp'] ?>">
+                                </div>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label class="form-label small">Destination critique</label>
+                                    <select name="critical_destination" class="form-select">
+                                        <option value="">— défaut (<?= esc($crime['critical_destination']) ?>) —</option>
+                                        <option value="jail">Prison</option>
+                                        <option value="hospital">Cyberclinique</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">Minutes critique min</label>
+                                    <input type="number" name="critical_minutes_min" min="0" class="form-control" placeholder="<?= (int) $crime['critical_minutes_min'] ?>">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">Minutes critique max</label>
+                                    <input type="number" name="critical_minutes_max" min="0" class="form-control" placeholder="<?= (int) $crime['critical_minutes_max'] ?>">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                            <button type="submit" class="btn btn-dark">Ajouter</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
 
         <div class="card border-dark mt-3">
             <div class="card-header bg-dark text-white small text-uppercase fw-semibold">Zone dangereuse</div>
