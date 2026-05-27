@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Models\MissionModel;
 use App\Models\PlayerModel;
 
 class Lab extends BaseController
@@ -14,6 +15,8 @@ class Lab extends BaseController
         if ($player === null) {
             return redirect()->to('/')->with('error', 'Fiche player introuvable.');
         }
+
+        model(MissionModel::class)->trackEvent((int) $player['id'], 'visit_page', 'lab');
 
         return view('lab', [
             'user'            => $user,
@@ -35,6 +38,12 @@ class Lab extends BaseController
         }
 
         $result = $playerModel->train((int) $player['id'], $statSlug);
+
+        if ($result['ok']) {
+            $missionModel = model(MissionModel::class);
+            $missionModel->trackEvent((int) $player['id'], 'train_stat', $statSlug);
+            $missionModel->recheckThresholdsForPlayer((int) $player['id']);
+        }
 
         return redirect()->to('/lab')->with(
             $result['ok'] ? 'message' : 'error',

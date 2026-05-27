@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Models\ItemModel;
+use App\Models\MissionModel;
 use App\Models\PlayerItemModel;
 use App\Models\PlayerModel;
 use App\Models\VendorModel;
@@ -12,6 +13,11 @@ class Shops extends BaseController
     /** Vue d'ensemble : grille des 3 marchands. */
     public function index()
     {
+        $player = model(PlayerModel::class)->findByUserId((int) auth()->user()->id);
+        if ($player !== null) {
+            model(MissionModel::class)->trackEvent((int) $player['id'], 'visit_page', 'shops');
+        }
+
         return view('shops/index', [
             'vendors' => model(VendorModel::class)->listAll(),
         ]);
@@ -95,6 +101,9 @@ class Shops extends BaseController
         ]);
 
         $db->transComplete();
+
+        // Hooks missions : un achat reussi compte pour buy_item (target = slug vendor ou '*').
+        model(MissionModel::class)->trackEvent((int) $player['id'], 'buy_item', (string) $vendor['slug']);
 
         return redirect()->to('/shop/' . $slug)
             ->with('message', '"' . esc($item['name']) . '" acheté pour ' . number_format($price) . ' crédits.');

@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Models\MissionModel;
 use App\Models\PlayerModel;
 
 class Profile extends BaseController
@@ -15,6 +16,8 @@ class Profile extends BaseController
         if ($player === null) {
             return redirect()->to('/')->with('error', 'Fiche player introuvable.');
         }
+
+        model(MissionModel::class)->trackEvent((int) $player['id'], 'visit_page', 'profile');
 
         return view('profile', [
             'user'     => $user,

@@ -150,4 +150,32 @@ class PlayerModel extends Model
             'cost'    => self::TRAIN_ENERGY_COST,
         ];
     }
+
+    /**
+     * Donne $amount XP au player. Si le total franchit le seuil level*100, level-up
+     * en cascade tant que le seuil est atteint (XP reportee sur le niveau suivant).
+     */
+    public function grantXp(int $playerId, int $amount): void
+    {
+        if ($amount <= 0) {
+            return;
+        }
+        $player = $this->find($playerId);
+        if ($player === null) {
+            return;
+        }
+
+        $level = (int) $player['level'];
+        $xp    = (int) $player['xp'] + $amount;
+
+        while ($xp >= $level * 100) {
+            $xp -= $level * 100;
+            $level++;
+        }
+
+        $this->update($playerId, [
+            'level' => $level,
+            'xp'    => $xp,
+        ]);
+    }
 }

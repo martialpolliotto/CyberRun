@@ -52,7 +52,31 @@
             <a href="/admin/items" class="card text-decoration-none text-dark h-100">
                 <div class="card-body">
                     <div class="fw-bold text-uppercase">Gestion des items</div>
-                    <p class="small text-muted mb-0">Créer, éditer, mettre hors-circuit ou supprimer définitivement les items du catalogue.</p>
+                    <p class="small text-muted mb-0">Créer, éditer, mettre hors-circuit ou supprimer les items du catalogue.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6">
+            <a href="/admin/vendors" class="card text-decoration-none text-dark h-100">
+                <div class="card-body">
+                    <div class="fw-bold text-uppercase">Gestion des marchands</div>
+                    <p class="small text-muted mb-0">Portraits, taglines et descriptions des 3 vendeurs.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6">
+            <a href="/admin/fixers" class="card text-decoration-none text-dark h-100">
+                <div class="card-body">
+                    <div class="fw-bold text-uppercase">Gestion des fixers</div>
+                    <p class="small text-muted mb-0">PNJ donneurs de missions et ordre de déblocage.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6">
+            <a href="/admin/missions" class="card text-decoration-none text-dark h-100">
+                <div class="card-body">
+                    <div class="fw-bold text-uppercase">Gestion des missions</div>
+                    <p class="small text-muted mb-0">Chaînes de missions par fixer, objectifs et récompenses.</p>
                 </div>
             </a>
         </div>

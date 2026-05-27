@@ -6,6 +6,7 @@
 <nav class="d-flex align-items-center gap-3 small">
     <?php if (function_exists('auth') && auth()->loggedIn()): ?>
         <a href="/profile" class="text-dark text-decoration-none">Profil</a>
+        <a href="/fixers" class="text-dark text-decoration-none">Fixers</a>
         <a href="/lab" class="text-dark text-decoration-none">Lab</a>
         <a href="/equipment" class="text-dark text-decoration-none">Équipement</a>
 

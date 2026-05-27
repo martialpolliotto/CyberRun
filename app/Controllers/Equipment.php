@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Models\ItemModel;
+use App\Models\MissionModel;
 use App\Models\PlayerItemModel;
 use App\Models\PlayerModel;
 
@@ -18,6 +19,8 @@ class Equipment extends BaseController
         if ($player === null) {
             return redirect()->to('/')->with('error', 'Fiche player introuvable.');
         }
+
+        model(MissionModel::class)->trackEvent((int) $player['id'], 'visit_page', 'equipment');
 
         // Donne les starters au player s'il n'a aucun item (idempotent, lazy).
         $piModel->ensureStarterKit((int) $player['id']);
@@ -61,6 +64,18 @@ class Equipment extends BaseController
         }
 
         $result = model(PlayerItemModel::class)->equip((int) $player['id'], $playerItemId);
+
+        if ($result['ok']) {
+            // Recupere le slot pour le tracking : on relit le player_item joint avec items.
+            $row = db_connect()->table('player_items')
+                ->select('items.slot')
+                ->join('items', 'items.id = player_items.item_id', 'inner')
+                ->where('player_items.id', $playerItemId)
+                ->get()->getRow();
+            $slot = $row?->slot ?? '*';
+            model(MissionModel::class)->trackEvent((int) $player['id'], 'equip_slot', (string) $slot);
+        }
+
         return redirect()->to('/equipment')->with($result['ok'] ? 'message' : 'error', $result['message']);
     }
 

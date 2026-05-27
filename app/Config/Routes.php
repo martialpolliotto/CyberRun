@@ -22,6 +22,11 @@ $routes->group('', ['filter' => 'session'], static function ($routes) {
     $routes->get('shops', 'Shops::index');
     $routes->get('shop/(:segment)', 'Shops::show/$1');
     $routes->post('shop/(:segment)/buy/(:num)', 'Shops::buy/$1/$2');
+
+    $routes->get('fixers', 'Fixers::index');
+    $routes->get('fixers/(:segment)', 'Fixers::show/$1');
+    $routes->post('fixers/accept/(:num)', 'Fixers::accept/$1');
+    $routes->post('fixers/claim/(:num)', 'Fixers::claim/$1');
 });
 
 // Zone admin : double filter (session + appartenance au groupe "admin").
@@ -40,4 +45,18 @@ $routes->group('admin', ['filter' => ['session', 'group:admin'], 'namespace' => 
     $routes->get('vendors',                'Vendors::index');
     $routes->get('vendors/(:num)/edit',    'Vendors::edit/$1');
     $routes->post('vendors/(:num)/save',   'Vendors::save/$1');
+
+    $routes->get('fixers',                  'Fixers::index');
+    $routes->get('fixers/new',              'Fixers::new');
+    $routes->post('fixers/save',            'Fixers::save');
+    $routes->get('fixers/(:num)/edit',      'Fixers::edit/$1');
+    $routes->post('fixers/(:num)/save',     'Fixers::save/$1');
+    $routes->post('fixers/(:num)/destroy',  'Fixers::destroy/$1');
+
+    $routes->get('missions',                  'Missions::index');
+    $routes->get('missions/new',              'Missions::new');
+    $routes->post('missions/save',            'Missions::save');
+    $routes->get('missions/(:num)/edit',      'Missions::edit/$1');
+    $routes->post('missions/(:num)/save',     'Missions::save/$1');
+    $routes->post('missions/(:num)/destroy',  'Missions::destroy/$1');
 });
