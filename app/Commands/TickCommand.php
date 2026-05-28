@@ -2,6 +2,7 @@
 
 namespace App\Commands;
 
+use App\Services\BotService;
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
 
@@ -39,14 +40,19 @@ class TickCommand extends BaseCommand
         );
         $hpAffected = $db->affectedRows();
 
+        // Bots : font tourner leurs actions apres la regen pour qu'ils benefient des points fraichement gagnes.
+        $botStats = (new BotService())->tickAll();
+
         $elapsed = round((microtime(true) - $start) * 1000, 1);
         CLI::write(
             sprintf(
-                '[%s] tick OK : energy +%d (%d players), nerve +%d (%d), hp +%d (%d) — %sms',
+                '[%s] tick OK : energy +%d (%d), nerve +%d (%d), hp +%d (%d) | bots %d/%d acted %s — %sms',
                 date('H:i:s'),
                 self::ENERGY_REGEN_PER_TICK, $energyAffected,
                 self::NERVE_REGEN_PER_TICK,  $nerveAffected,
                 self::HP_REGEN_PER_TICK,     $hpAffected,
+                $botStats['acted'], $botStats['ticked'],
+                $botStats['by_action'] === [] ? '' : '(' . http_build_query($botStats['by_action'], '', ', ') . ')',
                 $elapsed,
             ),
             'green',

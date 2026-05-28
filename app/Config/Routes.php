@@ -14,11 +14,20 @@ $routes->group('', ['filter' => 'session'], static function ($routes) {
     $routes->get('profile', 'Profile::index');
     $routes->get('jail', 'Jail::index');
     $routes->post('jail/escape', 'Jail::escape');
+
+    // Social (consultable en prison/hopital aussi).
+    $routes->get('players', 'Players::index');
+    $routes->get('players/(:segment)', 'Players::index/$1');
+    $routes->get('u/(:segment)', 'Players::show/$1');
+    $routes->get('leaderboards', 'Leaderboards::index');
+    $routes->get('leaderboards/(:segment)', 'Leaderboards::index/$1');
 });
 
 // Routes "actives" : bloquees si le joueur est incarcere (prison ou hopital).
 // Le filter 'free' redirige vers /jail ou /profile selon l'etat.
 $routes->group('', ['filter' => ['session', 'free']], static function ($routes) {
+    $routes->get('city', 'City::index');
+
     $routes->get('lab', 'Lab::index');
     $routes->post('lab/train/(:segment)', 'Lab::train/$1');
 
@@ -28,6 +37,10 @@ $routes->group('', ['filter' => ['session', 'free']], static function ($routes) 
 
     $routes->get('inventory', 'Inventory::index');
     $routes->post('inventory/consume/(:num)', 'Inventory::consume/$1');
+
+    // Actions sur les autres joueurs : faire evader (bust, nerve) ou payer caution (bail, credits).
+    $routes->post('bust/(:num)', 'Players::bust/$1');
+    $routes->post('bail/(:num)', 'Players::bail/$1');
 
     $routes->get('shops', 'Shops::index');
     $routes->get('shop/(:segment)', 'Shops::show/$1');
@@ -90,4 +103,12 @@ $routes->group('admin', ['filter' => ['session', 'group:admin'], 'namespace' => 
     $routes->post('crimes/(:num)/texts/add',            'Crimes::addText/$1');
     $routes->post('crimes/(:num)/texts/(:num)/save',    'Crimes::updateText/$1/$2');
     $routes->post('crimes/(:num)/texts/(:num)/destroy', 'Crimes::deleteText/$1/$2');
+
+    $routes->get('game-settings',       'GameSettings::index');
+    $routes->post('game-settings/save', 'GameSettings::save');
+
+    $routes->get('bots',                   'Bots::index');
+    $routes->post('bots/populate',         'Bots::populate');
+    $routes->post('bots/(:num)/destroy',   'Bots::destroy/$1');
+    $routes->post('bots/destroy-all',      'Bots::destroyAll');
 });

@@ -33,6 +33,8 @@ class PlayerModel extends Model
         'addiction_updated_at',
         'last_booster_at',
         'last_drug_at',
+        'is_bot',
+        'bot_persona',
     ];
 
     /** Couts et probas de l'evasion solo depuis la prison. */
@@ -91,6 +93,115 @@ class PlayerModel extends Model
     public function findByUserId(int $userId): ?array
     {
         return $this->where('user_id', $userId)->first();
+    }
+
+    /**
+     * Profil public d'un joueur via son username (joint sur users).
+     * Renvoie les colonnes player + username + created_at + status (libre/jail/hospital).
+     *
+     * @return array<string,mixed>|null
+     */
+    public function findByUsername(string $username): ?array
+    {
+        $row = $this->select('players.*, users.username, users.created_at AS joined_at')
+            ->join('users', 'users.id = players.user_id', 'inner')
+            ->where('users.username', $username)
+            ->first();
+        if ($row === null) {
+            return null;
+        }
+        $row['_status'] = $this->resolvePublicStatus($row);
+        return $row;
+    }
+
+    /**
+     * Recherche paginee par username (LIKE %query%). Joins users.
+     * $statusFilter : null = tous, 'jail' = en prison, 'hospital' = a la cyberclinique.
+     * Pour les filtres status, le tri se fait par temps restant croissant (les plus proches
+     * de la sortie en premier).
+     *
+     * @return array{rows: array<int, array<string, mixed>>, pager: ?\CodeIgniter\Pager\PagerInterface}
+     */
+    public function searchByUsername(string $query, int $perPage = 30, ?string $statusFilter = null): array
+    {
+        $nowStr = Time::now()->toDateTimeString();
+        $b = $this->select('players.id, players.level, players.in_jail_until, players.in_hospital_until, users.username, users.created_at AS joined_at')
+            ->join('users', 'users.id = players.user_id', 'inner');
+
+        if ($statusFilter === 'jail') {
+            $b = $b->where('players.in_jail_until >', $nowStr)->orderBy('players.in_jail_until', 'ASC');
+        } elseif ($statusFilter === 'hospital') {
+            $b = $b->where('players.in_hospital_until >', $nowStr)->orderBy('players.in_hospital_until', 'ASC');
+        } else {
+            $b = $b->orderBy('users.username');
+        }
+
+        if ($query !== '') {
+            $b = $b->like('users.username', $query);
+        }
+        $rows = $b->paginate($perPage);
+        foreach ($rows as &$r) {
+            $r['_status'] = $this->resolvePublicStatus($r);
+        }
+        unset($r);
+        return ['rows' => $rows, 'pager' => $this->pager];
+    }
+
+    /**
+     * Renvoie le top N joueurs par une colonne donnee (level, credits, ...).
+     * Whitelist anti-injection : seules les colonnes listees sont acceptees.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function topByField(string $field, int $limit = 20): array
+    {
+        $allowed = ['level', 'credits', 'xp', 'stat_force', 'stat_blindage', 'stat_reflexes', 'stat_hack'];
+        if (! in_array($field, $allowed, true)) {
+            return [];
+        }
+        return $this->select('players.id, players.' . $field . ' AS metric, players.level, users.username, users.created_at AS joined_at, players.in_jail_until, players.in_hospital_until')
+            ->join('users', 'users.id = players.user_id', 'inner')
+            ->orderBy('players.' . $field, 'DESC')
+            ->orderBy('users.username')
+            ->limit($limit)
+            ->findAll();
+    }
+
+    /**
+     * Top XP par categorie de crime.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function topByCrimeCategory(int $categoryId, int $limit = 20): array
+    {
+        return $this->db->table('player_crime_progress pcp')
+            ->select('pcp.xp AS metric, pcp.successes, players.level, users.username, users.created_at AS joined_at, players.in_jail_until, players.in_hospital_until')
+            ->join('players', 'players.id = pcp.player_id', 'inner')
+            ->join('users', 'users.id = players.user_id', 'inner')
+            ->where('pcp.category_id', $categoryId)
+            ->where('pcp.xp >', 0)
+            ->orderBy('pcp.xp', 'DESC')
+            ->orderBy('users.username')
+            ->limit($limit)
+            ->get()->getResultArray();
+    }
+
+    /**
+     * Resout le status public d'un joueur ('libre' | 'prison' | 'hopital') a partir de ses
+     * champs in_jail_until / in_hospital_until.
+     *
+     * @param array<string, mixed> $row
+     */
+    public function resolvePublicStatus(array $row): string
+    {
+        $now = Time::now();
+        if (! empty($row['in_hospital_until']) && Time::parse($row['in_hospital_until'])->isAfter($now)) {
+            return 'hospital';
+        }
+        if (! empty($row['in_jail_until']) && Time::parse($row['in_jail_until'])->isAfter($now)) {
+            return 'jail';
+        }
+        return 'libre';
     }
 
     /**
@@ -493,5 +604,188 @@ class PlayerModel extends Model
         } else {
             $piModel->update($playerItemId, ['quantity' => $currentQuantity - 1]);
         }
+    }
+
+    /**
+     * Calcule le cout en credits pour bail un detenu.
+     * Formule : niveau cible * minutes restantes * coefficient (configurable via game_settings).
+     */
+    public function calculateBailCost(array $target): int
+    {
+        if (empty($target['in_jail_until'])) {
+            return 0;
+        }
+        $until = Time::parse($target['in_jail_until']);
+        $now   = Time::now();
+        if ($until->isBefore($now)) {
+            return 0;
+        }
+        $minutes = max(1, (int) ceil(($until->getTimestamp() - $now->getTimestamp()) / 60));
+        $coef    = (float) model(GameSettingModel::class)->get('bail_coefficient', 1.0);
+        return (int) max(1, round((int) $target['level'] * $minutes * $coef));
+    }
+
+    /**
+     * Calcule le % estime de succes d'un bust : power(me)/difficulty(target) * multiplier, clampe 5-95.
+     * Power = mon_niveau * (1 + mes_reflexes/20).
+     * Difficulty = niveau_cible * (1 + minutes_restantes/60).
+     *
+     * @param array<string,mixed> $me
+     * @param array<string,mixed> $target
+     */
+    public function estimateBustPct(array $me, array $target): int
+    {
+        if (empty($target['in_jail_until'])) {
+            return 0;
+        }
+        $until = Time::parse($target['in_jail_until']);
+        $now   = Time::now();
+        if ($until->isBefore($now)) {
+            return 0;
+        }
+        $minutes = max(1, (int) ceil(($until->getTimestamp() - $now->getTimestamp()) / 60));
+
+        $power      = (int) $me['level'] * (1 + (int) $me['stat_reflexes'] / 20);
+        $difficulty = (int) $target['level'] * (1 + $minutes / 60);
+
+        $mult = (int) model(GameSettingModel::class)->get('bust_difficulty_multiplier', 50);
+        $pct  = (int) round(($difficulty > 0 ? $power / $difficulty : 0) * $mult);
+        return max(5, min(95, $pct));
+    }
+
+    /**
+     * Tente de faire evader un detenu. Consomme nerve, roll de succes :
+     *  - succes : la cible sort de prison (in_jail_until -> null)
+     *  - echec  : l'attaquant part en prison (bust_fail_critical_min/max minutes)
+     *
+     * @return array{ok: bool, message: string, outcome?: 'success'|'fail', success_pct?: int}
+     */
+    public function bust(int $playerId, int $targetPlayerId): array
+    {
+        if ($playerId === $targetPlayerId) {
+            return ['ok' => false, 'message' => 'Tu ne peux pas te bust toi-meme.'];
+        }
+
+        $me     = $this->find($playerId);
+        $target = $this->find($targetPlayerId);
+        if ($me === null || $target === null) {
+            return ['ok' => false, 'message' => 'Joueur introuvable.'];
+        }
+
+        $now = Time::now();
+        if (! empty($me['in_jail_until']) && Time::parse($me['in_jail_until'])->isAfter($now)) {
+            return ['ok' => false, 'message' => 'Tu es en prison, impossible de bust qui que ce soit.'];
+        }
+        if (! empty($me['in_hospital_until']) && Time::parse($me['in_hospital_until'])->isAfter($now)) {
+            return ['ok' => false, 'message' => 'Tu es a la cyberclinique, repose-toi.'];
+        }
+        if (empty($target['in_jail_until']) || Time::parse($target['in_jail_until'])->isBefore($now)) {
+            return ['ok' => false, 'message' => 'Cette personne n\'est plus en prison.'];
+        }
+
+        $settings  = model(GameSettingModel::class);
+        $nerveCost = (int) $settings->get('bust_nerve_cost', 5);
+        if ((int) $me['nerve_current'] < $nerveCost) {
+            return ['ok' => false, 'message' => 'Nerve insuffisante (' . $nerveCost . ' requise).'];
+        }
+
+        // Debit nerve atomique.
+        $affected = $this->builder()
+            ->where('id', $playerId)
+            ->where('nerve_current >=', $nerveCost)
+            ->update([
+                'nerve_current' => new \CodeIgniter\Database\RawSql('nerve_current - ' . $nerveCost),
+                'updated_at'    => $now->toDateTimeString(),
+            ]);
+        if (! $affected) {
+            return ['ok' => false, 'message' => 'Nerve insuffisante au moment de la tentative.'];
+        }
+
+        $pct  = $this->estimateBustPct($me, $target);
+        $roll = random_int(0, 99);
+
+        if ($roll < $pct) {
+            // Succes : la cible sort.
+            $this->update($targetPlayerId, ['in_jail_until' => null]);
+            return [
+                'ok'          => true,
+                'message'     => 'Bust reussi ! Ta cible s\'evapore dans les ruelles.',
+                'outcome'     => 'success',
+                'success_pct' => $pct,
+            ];
+        }
+
+        // Echec : l'attaquant part en prison.
+        $minM = (int) $settings->get('bust_fail_critical_min', 60);
+        $maxM = max($minM, (int) $settings->get('bust_fail_critical_max', 180));
+        $minutes = random_int($minM, $maxM);
+        $until   = $now->addMinutes($minutes)->toDateTimeString();
+        $this->update($playerId, ['in_jail_until' => $until]);
+
+        return [
+            'ok'          => true,
+            'message'     => 'Bust rate. Les gardes te chopent et te collent ' . $minutes . ' minutes au trou.',
+            'outcome'     => 'fail',
+            'success_pct' => $pct,
+        ];
+    }
+
+    /**
+     * Paie la caution d'un detenu : sortie immediate de la cible contre des credits.
+     * Cout : niveau cible * minutes restantes * coefficient.
+     *
+     * @return array{ok: bool, message: string, cost?: int}
+     */
+    public function payBail(int $playerId, int $targetPlayerId): array
+    {
+        if ($playerId === $targetPlayerId) {
+            return ['ok' => false, 'message' => 'Tu ne peux pas payer ta propre caution.'];
+        }
+
+        $me     = $this->find($playerId);
+        $target = $this->find($targetPlayerId);
+        if ($me === null || $target === null) {
+            return ['ok' => false, 'message' => 'Joueur introuvable.'];
+        }
+
+        $now = Time::now();
+        if (! empty($me['in_jail_until']) && Time::parse($me['in_jail_until'])->isAfter($now)) {
+            return ['ok' => false, 'message' => 'Tu es en prison, impossible de payer une caution.'];
+        }
+        if (empty($target['in_jail_until']) || Time::parse($target['in_jail_until'])->isBefore($now)) {
+            return ['ok' => false, 'message' => 'Cette personne n\'est plus en prison.'];
+        }
+
+        $cost = $this->calculateBailCost($target);
+        if ((int) $me['credits'] < $cost) {
+            return ['ok' => false, 'message' => 'Credits insuffisants (' . $cost . ' requis).'];
+        }
+
+        $db = db_connect();
+        $db->transStart();
+
+        // Debit atomique des credits.
+        $this->builder()
+            ->where('id', $playerId)
+            ->where('credits >=', $cost)
+            ->update([
+                'credits'    => new \CodeIgniter\Database\RawSql('credits - ' . $cost),
+                'updated_at' => $now->toDateTimeString(),
+            ]);
+        if ($db->affectedRows() === 0) {
+            $db->transRollback();
+            return ['ok' => false, 'message' => 'Credits insuffisants au moment du paiement.'];
+        }
+
+        // Liberation de la cible.
+        $this->update($targetPlayerId, ['in_jail_until' => null]);
+
+        $db->transComplete();
+
+        return [
+            'ok'      => true,
+            'message' => 'Caution payee (' . $cost . ' credits). Ta cible est libre.',
+            'cost'    => $cost,
+        ];
     }
 }

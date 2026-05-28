@@ -97,6 +97,22 @@
             </a>
         </div>
         <div class="col-md-6">
+            <a href="/admin/game-settings" class="card text-decoration-none text-dark h-100">
+                <div class="card-body">
+                    <div class="fw-bold text-uppercase">Paramètres du jeu</div>
+                    <p class="small text-muted mb-0">Coefficients ajustables (bust, bail, etc.) édités sans toucher au code.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6">
+            <a href="/admin/bots" class="card text-decoration-none text-dark h-100">
+                <div class="card-body">
+                    <div class="fw-bold text-uppercase">Bots</div>
+                    <p class="small text-muted mb-0">Joueurs automatisés qui peuplent le monde, agissent selon leur persona à chaque tick.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6">
             <div class="card h-100 text-muted">
                 <div class="card-body">
                     <div class="fw-bold text-uppercase">Gestion utilisateurs</div>

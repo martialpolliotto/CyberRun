@@ -6,13 +6,11 @@
 <nav class="d-flex align-items-center gap-3 small">
     <?php if (function_exists('auth') && auth()->loggedIn()): ?>
         <a href="/profile" class="text-dark text-decoration-none">Profil</a>
-        <a href="/fixers" class="text-dark text-decoration-none">Fixers</a>
-        <a href="/crimes" class="text-dark text-decoration-none">Crimes</a>
-        <a href="/lab" class="text-dark text-decoration-none">Lab</a>
+        <a href="/city" class="text-dark text-decoration-none fw-semibold">Chrome City</a>
         <a href="/equipment" class="text-dark text-decoration-none">Équipement</a>
         <a href="/inventory" class="text-dark text-decoration-none">Inventaire</a>
-
-        <a href="/shops" class="text-dark text-decoration-none">Marchés</a>
+        <a href="/players" class="text-dark text-decoration-none">Joueurs</a>
+        <a href="/leaderboards" class="text-dark text-decoration-none">Classements</a>
 
         <?php if (auth()->user()->inGroup('admin', 'superadmin')): ?>
             <a href="/admin" class="text-dark text-decoration-none fw-bold">[ADMIN]</a>
