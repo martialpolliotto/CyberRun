@@ -35,6 +35,9 @@ class PlayerModel extends Model
         'last_drug_at',
         'is_bot',
         'bot_persona',
+        'bot_active_hour_start',
+        'bot_active_hour_end',
+        'bot_weekend_boost_pct',
     ];
 
     /** Couts et probas de l'evasion solo depuis la prison. */

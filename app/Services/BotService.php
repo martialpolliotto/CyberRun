@@ -109,21 +109,33 @@ class BotService
     public const PSEUDO_SUFFIX_LETTERS = ['x', 'k', 'z', 'v', 'q', 'j', 'r', 's'];
 
     /**
-     * Itere sur tous les bots non-incarceres et fait potentiellement agir chacun
-     * selon bot_action_chance_pct. Retourne un compteur des actions executees.
+     * Itere sur tous les bots non-incarceres et fait potentiellement agir chacun.
+     * La chance d'agir est modulee par :
+     *  - bot_action_chance_pct (base)
+     *  - facteur weekend (boost via bot_weekend_boost_pct si vendredi soir -> dimanche soir)
+     *  - facteur off-hours (bot_off_hours_factor si l'heure courante n'est pas dans la fenetre du bot)
      *
      * @return array{ticked: int, acted: int, by_action: array<string, int>}
      */
     public function tickAll(): array
     {
-        $chance = (int) model(GameSettingModel::class)->get('bot_action_chance_pct', 30);
-        $bots   = $this->listActiveBots();
+        $settings    = model(GameSettingModel::class);
+        $baseChance  = (int) $settings->get('bot_action_chance_pct', 30);
+        $offHoursPct = (int) $settings->get('bot_off_hours_factor', 10);
+        $bots        = $this->listActiveBots();
+
+        $now           = \CodeIgniter\I18n\Time::now();
+        $currentHour   = (int) $now->getHour();
+        $isWeekendNow  = $this->isWeekend($now);
 
         $acted    = 0;
         $byAction = [];
 
         foreach ($bots as $bot) {
-            if (random_int(0, 99) >= $chance) {
+            $effectiveChance = $this->effectiveChanceForBot(
+                $bot, $baseChance, $offHoursPct, $currentHour, $isWeekendNow,
+            );
+            if ($effectiveChance <= 0 || random_int(0, 99) >= $effectiveChance) {
                 continue;
             }
             $action = $this->runOneAction((int) $bot['id'], (string) $bot['bot_persona']);
@@ -134,6 +146,51 @@ class BotService
         }
 
         return ['ticked' => count($bots), 'acted' => $acted, 'by_action' => $byAction];
+    }
+
+    /**
+     * Calcule la chance d'agir d'un bot a un instant donne, en appliquant
+     * les modificateurs de plage horaire et de weekend.
+     *
+     * @param array<string,mixed> $bot
+     */
+    private function effectiveChanceForBot(array $bot, int $baseChance, int $offHoursPct, int $currentHour, bool $isWeekendNow): int
+    {
+        $start = $bot['bot_active_hour_start'] ?? null;
+        $end   = $bot['bot_active_hour_end']   ?? null;
+        $inWindow = ($start === null || $end === null)
+            ? true
+            : $this->hourInWindow($currentHour, (int) $start, (int) $end);
+
+        $chance = (float) $baseChance;
+        if (! $inWindow) {
+            $chance *= $offHoursPct / 100.0;
+        }
+        if ($isWeekendNow) {
+            $boost   = (int) ($bot['bot_weekend_boost_pct'] ?? 0);
+            $chance *= 1 + $boost / 100.0;
+        }
+        return (int) min(100, round($chance));
+    }
+
+    /** Heure courante incluse dans la fenetre [start, end) ? Gere le wrap-minuit (ex: 22h-5h). */
+    private function hourInWindow(int $hour, int $start, int $end): bool
+    {
+        if ($start === $end) return false;
+        if ($start < $end) {
+            return $hour >= $start && $hour < $end;
+        }
+        return $hour >= $start || $hour < $end;
+    }
+
+    /** Weekend large : vendredi soir (>= 18h) -> dimanche soir (< 23h). */
+    private function isWeekend(\CodeIgniter\I18n\Time $t): bool
+    {
+        $dow  = (int) $t->getDayOfWeek(); // 1=lundi ... 7=dimanche selon CI4 (PHP : 1=lun, 7=dim)
+        $hour = (int) $t->getHour();
+        if ($dow === 6 || $dow === 7) return true;     // samedi et dimanche
+        if ($dow === 5 && $hour >= 18) return true;    // vendredi soir
+        return false;
     }
 
     /**
@@ -210,9 +267,17 @@ class BotService
                     $errors[] = 'Player non cree pour ' . $username;
                     continue;
                 }
+                // Plage horaire random : pour pas que tous les bots agissent en meme temps.
+                $start  = random_int(0, 23);
+                $window = random_int(6, 12);
+                $end    = ($start + $window) % 24;
+                $boost  = random_int(20, 80);
                 $playerModel->update($player['id'], [
-                    'is_bot'      => 1,
-                    'bot_persona' => $persona,
+                    'is_bot'                => 1,
+                    'bot_persona'           => $persona,
+                    'bot_active_hour_start' => $start,
+                    'bot_active_hour_end'   => $end,
+                    'bot_weekend_boost_pct' => $boost,
                 ]);
                 $created++;
             } catch (\Throwable $e) {
@@ -227,7 +292,7 @@ class BotService
     private function listActiveBots(): array
     {
         return model(PlayerModel::class)
-            ->select('id, level, bot_persona, energy_current, nerve_current, hp_current, credits, in_jail_until, in_hospital_until')
+            ->select('id, level, bot_persona, energy_current, nerve_current, hp_current, credits, in_jail_until, in_hospital_until, bot_active_hour_start, bot_active_hour_end, bot_weekend_boost_pct, last_booster_at, last_drug_at')
             ->where('is_bot', 1)
             ->findAll();
     }
