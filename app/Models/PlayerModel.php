@@ -322,6 +322,11 @@ class PlayerModel extends Model
             return ['ok' => false, 'message' => 'Entraînement échoué (énergie insuffisante ?).'];
         }
 
+        // Mission tracking : pose au niveau du model pour que humains ET bots declenchent.
+        $missions = model(MissionModel::class);
+        $missions->trackEvent($playerId, 'train_stat', $statSlug);
+        $missions->recheckThresholdsForPlayer($playerId);
+
         return [
             'ok'      => true,
             'message' => '+' . self::TRAIN_STAT_GAIN . ' ' . ucfirst($statSlug) . ' (-' . self::TRAIN_ENERGY_COST . ' énergie).',

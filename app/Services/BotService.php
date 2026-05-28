@@ -4,10 +4,13 @@ namespace App\Services;
 
 use App\Models\CrimeCategoryModel;
 use App\Models\CrimeModel;
+use App\Models\FixerModel;
 use App\Models\GameSettingModel;
 use App\Models\ItemModel;
+use App\Models\MissionModel;
 use App\Models\PlayerCrimeProgressModel;
 use App\Models\PlayerItemModel;
+use App\Models\PlayerMissionModel;
 use App\Models\PlayerModel;
 use App\Models\UserModel;
 use CodeIgniter\I18n\Time;
@@ -32,32 +35,40 @@ class BotService
      */
     public const PERSONAS = [
         'criminel' => [
-            'crime'   => 55,
-            'train'   => 10,
-            'consume' => 5,
-            'buy'     => 5,
-            'idle'    => 25,
+            'crime'         => 45,
+            'train'         => 10,
+            'consume'       => 5,
+            'buy'           => 5,
+            'mission_accept'=> 8,
+            'mission_claim' => 7,
+            'idle'          => 20,
         ],
         'athlete' => [
-            'train'   => 55,
-            'crime'   => 10,
-            'consume' => 5,
-            'buy'     => 5,
-            'idle'    => 25,
+            'train'         => 45,
+            'crime'         => 10,
+            'consume'       => 5,
+            'buy'           => 5,
+            'mission_accept'=> 8,
+            'mission_claim' => 7,
+            'idle'          => 20,
         ],
         'trafiquant' => [
-            'crime'   => 35,
-            'consume' => 20,
-            'buy'     => 15,
-            'train'   => 5,
-            'idle'    => 25,
+            'crime'         => 30,
+            'consume'       => 18,
+            'buy'           => 12,
+            'train'         => 5,
+            'mission_accept'=> 8,
+            'mission_claim' => 7,
+            'idle'          => 20,
         ],
         'lambda' => [
-            'crime'   => 25,
-            'train'   => 25,
-            'consume' => 10,
-            'buy'     => 10,
-            'idle'    => 30,
+            'crime'         => 20,
+            'train'         => 20,
+            'consume'       => 10,
+            'buy'           => 10,
+            'mission_accept'=> 10,
+            'mission_claim' => 10,
+            'idle'          => 20,
         ],
     ];
 
@@ -217,11 +228,13 @@ class BotService
         $action  = $this->weightedPick($weights);
 
         return match ($action) {
-            'train'   => $this->actTrain($bot, $persona),
-            'crime'   => $this->actCrime($bot, $persona),
-            'consume' => $this->actConsume($bot),
-            'buy'     => $this->actBuy($bot),
-            default   => 'idle',
+            'train'          => $this->actTrain($bot, $persona),
+            'crime'          => $this->actCrime($bot, $persona),
+            'consume'        => $this->actConsume($bot),
+            'buy'            => $this->actBuy($bot),
+            'mission_accept' => $this->actAcceptMission($bot),
+            'mission_claim'  => $this->actClaimMission($bot),
+            default          => 'idle',
         };
     }
 
@@ -307,7 +320,13 @@ class BotService
         $weights = self::STAT_WEIGHTS[$persona] ?? self::STAT_WEIGHTS['lambda'];
         $stat    = $this->weightedPick($weights);
         $r = model(PlayerModel::class)->train((int) $bot['id'], $stat);
-        return $r['ok'] ? 'train' : null;
+        if (! $r['ok']) {
+            return null;
+        }
+        // Le tracking train_stat est deja pose dans PlayerModel::train. On ajoute le visit_page
+        // implicite pour valider les missions "Va au Lab".
+        model(MissionModel::class)->trackEvent((int) $bot['id'], 'visit_page', 'lab');
+        return 'train';
     }
 
     private function actCrime(array $bot, string $persona): ?string
@@ -333,7 +352,12 @@ class BotService
         // Pick random parmi les abordables (pas forcement le plus dur, evite la specialisation extreme).
         $pick = $affordable[array_rand($affordable)];
         $r = model(CrimeModel::class)->attempt((int) $bot['id'], (int) $pick['id']);
-        return $r['ok'] ? 'crime' : null;
+        if (! $r['ok']) {
+            return null;
+        }
+        // CrimeModel::attempt pose deja commit_crime. On ajoute visit_page='crimes' implicite.
+        model(MissionModel::class)->trackEvent((int) $bot['id'], 'visit_page', 'crimes');
+        return 'crime';
     }
 
     private function actConsume(array $bot): ?string
@@ -365,22 +389,29 @@ class BotService
         }
         $pick = $eligible[array_rand($eligible)];
         $r = model(PlayerModel::class)->consume((int) $bot['id'], (int) $pick['id']);
-        return $r['ok'] ? 'consume' : null;
+        if (! $r['ok']) {
+            return null;
+        }
+        model(MissionModel::class)->trackEvent((int) $bot['id'], 'visit_page', 'inventory');
+        return 'consume';
     }
 
     private function actBuy(array $bot): ?string
     {
         // Pick item abordable au prix minimal pour eviter de claquer tout le stock.
-        $rows = model(ItemModel::class)
-            ->where('discontinued', 0)
-            ->where('price >', 0)
-            ->where('price <=', (int) $bot['credits'])
-            ->orderBy('price')
-            ->findAll();
+        // Joins items + vendors pour recuperer le slug vendor (utile au tracking).
+        $rows = db_connect()->table('items i')
+            ->select('i.id, i.price, v.slug AS vendor_slug')
+            ->join('vendors v', 'v.id = i.vendor_id', 'left')
+            ->where('i.discontinued', 0)
+            ->where('i.price >', 0)
+            ->where('i.price <=', (int) $bot['credits'])
+            ->orderBy('i.price')
+            ->limit(20)
+            ->get()->getResultArray();
         if (empty($rows)) {
             return null;
         }
-        // Limite aux 5 moins chers pour rester realiste.
         $cheap = array_slice($rows, 0, 5);
         $pick  = $cheap[array_rand($cheap)];
 
@@ -404,7 +435,60 @@ class BotService
             'quantity'  => 1,
         ]);
         $db->transComplete();
+
+        $missions = model(MissionModel::class);
+        $missions->trackEvent((int) $bot['id'], 'buy_item', (string) ($pick['vendor_slug'] ?? '*'));
+        $missions->trackEvent((int) $bot['id'], 'visit_page', 'shops');
         return 'buy';
+    }
+
+    /**
+     * Accepte une mission disponible : choisit un fixer debloque au hasard, prend
+     * sa mission courante si elle n'est pas encore acceptee.
+     */
+    private function actAcceptMission(array $bot): ?string
+    {
+        $missions  = model(MissionModel::class);
+        $fixers    = model(FixerModel::class)->listUnlocked((int) $bot['id']);
+        if (empty($fixers)) {
+            return null;
+        }
+        shuffle($fixers);
+        foreach ($fixers as $f) {
+            $current = $missions->getCurrentMissionForPlayer((int) $f['id'], (int) $bot['id']);
+            // null = chaine terminee ; player_status != null = deja acceptee (in_progress ou completed).
+            if ($current === null || $current['player_status'] !== null) {
+                continue;
+            }
+            $r = $missions->accept((int) $bot['id'], (int) $current['id']);
+            if ($r['ok']) {
+                // L'acceptation simule une visite chez le fixer + tracker visit profile aussi.
+                $missions->trackEvent((int) $bot['id'], 'visit_page', 'profile');
+                return 'mission_accept';
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Reclame une mission completed du bot (sur n'importe quel fixer).
+     */
+    private function actClaimMission(array $bot): ?string
+    {
+        $missions = model(MissionModel::class);
+        // Re-evalue les seuils pour eviter de manquer une mission tout juste completable.
+        $missions->recheckThresholdsForPlayer((int) $bot['id']);
+
+        $completed = model(PlayerMissionModel::class)
+            ->where('player_id', (int) $bot['id'])
+            ->where('status', 'completed')
+            ->findAll();
+        if (empty($completed)) {
+            return null;
+        }
+        $pick = $completed[array_rand($completed)];
+        $r = $missions->claim((int) $bot['id'], (int) $pick['mission_id']);
+        return $r['ok'] ? 'mission_claim' : null;
     }
 
     /**

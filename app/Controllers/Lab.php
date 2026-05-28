@@ -38,12 +38,7 @@ class Lab extends BaseController
         }
 
         $result = $playerModel->train((int) $player['id'], $statSlug);
-
-        if ($result['ok']) {
-            $missionModel = model(MissionModel::class);
-            $missionModel->trackEvent((int) $player['id'], 'train_stat', $statSlug);
-            $missionModel->recheckThresholdsForPlayer((int) $player['id']);
-        }
+        // Note : PlayerModel::train pose deja le trackEvent + recheckThresholds (humains + bots).
 
         return redirect()->to('/lab')->with(
             $result['ok'] ? 'message' : 'error',

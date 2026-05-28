@@ -93,6 +93,11 @@ class PlayerItemModel extends Model
         $this->update($playerItemId, ['equipped' => 1]);
         $db->transComplete();
 
+        if ($db->transStatus()) {
+            // Mission tracking pose au niveau model (humains + bots).
+            model(MissionModel::class)->trackEvent($playerId, 'equip_slot', (string) $row['item_slot']);
+        }
+
         return [
             'ok'      => $db->transStatus(),
             'message' => $db->transStatus() ? esc($row['item_name']) . ' équipé.' : 'Erreur transaction.',

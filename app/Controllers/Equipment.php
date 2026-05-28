@@ -68,17 +68,7 @@ class Equipment extends BaseController
         }
 
         $result = model(PlayerItemModel::class)->equip((int) $player['id'], $playerItemId);
-
-        if ($result['ok']) {
-            // Recupere le slot pour le tracking : on relit le player_item joint avec items.
-            $row = db_connect()->table('player_items')
-                ->select('items.slot')
-                ->join('items', 'items.id = player_items.item_id', 'inner')
-                ->where('player_items.id', $playerItemId)
-                ->get()->getRow();
-            $slot = $row?->slot ?? '*';
-            model(MissionModel::class)->trackEvent((int) $player['id'], 'equip_slot', (string) $slot);
-        }
+        // Note : PlayerItemModel::equip pose deja le trackEvent equip_slot.
 
         return redirect()->to('/equipment')->with($result['ok'] ? 'message' : 'error', $result['message']);
     }
