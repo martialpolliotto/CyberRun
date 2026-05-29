@@ -15,6 +15,9 @@ $routes->group('', ['filter' => 'session'], static function ($routes) {
     $routes->get('jail', 'Jail::index');
     $routes->post('jail/escape', 'Jail::escape');
 
+    // Log d'activite perso (toujours accessible).
+    $routes->get('log', 'Logs::index');
+
     // Social (consultable en prison/hopital aussi).
     $routes->get('players', 'Players::index');
     $routes->get('players/(:segment)', 'Players::index/$1');

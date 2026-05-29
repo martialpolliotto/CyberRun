@@ -103,6 +103,12 @@ class MissionModel extends Model
         // Pour les seuils (reach_stat / reach_level), on peut deja remplir si l'etat actuel suffit.
         $this->recheckThresholdsForPlayer($playerId);
 
+        $fixer = model(FixerModel::class)->find((int) $mission['fixer_id']);
+        \App\Services\ActivityLogger::log($playerId, 'mission', 'Log.mission_accept', [
+            'mission_name' => $mission['name'],
+            'fixer_name'   => $fixer['name'] ?? '',
+        ], null, (int) $mission['id']);
+
         return ['ok' => true, 'message' => 'Mission acceptee : ' . $mission['name'] . '.'];
     }
 
@@ -168,6 +174,12 @@ class MissionModel extends Model
         ]);
 
         $db->transComplete();
+
+        \App\Services\ActivityLogger::log($playerId, 'mission', 'Log.mission_claim', [
+            'mission_name' => $mission['name'],
+            'credits'      => (int) $mission['reward_credits'],
+            'xp'           => (int) $mission['reward_xp'],
+        ], null, (int) $mission['id']);
 
         $msg = 'Recompense recue : ' . ($rewardParts === [] ? 'aucune' : implode(', ', $rewardParts)) . '.';
         return ['ok' => true, 'message' => $msg];

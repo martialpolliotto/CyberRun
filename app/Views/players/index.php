@@ -55,12 +55,33 @@
         <?php endforeach ?>
     </ul>
 
-    <form method="get" action="<?= $status === null ? '/players' : '/players/' . esc($status) ?>" class="mb-3 d-flex gap-2">
-        <input type="text" name="q" value="<?= esc($query) ?>" placeholder="Pseudo…" class="form-control">
-        <button type="submit" class="btn btn-dark">Rechercher</button>
-        <?php if ($query !== ''): ?>
-            <a href="<?= $status === null ? '/players' : '/players/' . esc($status) ?>" class="btn btn-outline-dark">Reset</a>
-        <?php endif ?>
+    <form method="get" action="<?= $status === null ? '/players' : '/players/' . esc($status) ?>" class="mb-3">
+        <div class="row g-2">
+            <div class="col-md-5">
+                <input type="text" name="q" value="<?= esc($query) ?>" placeholder="Pseudo…" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <select name="sort" class="form-select">
+                    <option value="">— Tri par défaut —</option>
+                    <?php foreach (\App\Models\PlayerModel::PLAYER_SORTS as $k => $label): ?>
+                        <option value="<?= esc($k) ?>" <?= $sort === $k ? 'selected' : '' ?>><?= esc($label) ?></option>
+                    <?php endforeach ?>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="lvl" class="form-select">
+                    <?php foreach (\App\Models\PlayerModel::PLAYER_LEVEL_BUCKETS as $k => $cfg): ?>
+                        <option value="<?= esc($k) ?>" <?= $bucket === $k ? 'selected' : '' ?>><?= esc($cfg[2]) ?></option>
+                    <?php endforeach ?>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-dark flex-grow-1">Filtrer</button>
+                <?php if ($query !== '' || $sort !== '' || $bucket !== 'all'): ?>
+                    <a href="<?= $status === null ? '/players' : '/players/' . esc($status) ?>" class="btn btn-outline-dark">×</a>
+                <?php endif ?>
+            </div>
+        </div>
     </form>
 
     <div class="table-responsive">

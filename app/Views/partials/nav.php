@@ -6,6 +6,7 @@
 <nav class="d-flex align-items-center gap-3 small">
     <?php if (function_exists('auth') && auth()->loggedIn()): ?>
         <a href="/profile" class="text-dark text-decoration-none">Profil</a>
+        <a href="/log" class="text-dark text-decoration-none">Log</a>
         <a href="/city" class="text-dark text-decoration-none fw-semibold">Chrome City</a>
         <a href="/equipment" class="text-dark text-decoration-none">Équipement</a>
         <a href="/inventory" class="text-dark text-decoration-none">Inventaire</a>

@@ -1,0 +1,40 @@
+<?php
+
+/**
+ * Phrases du log d'activite (FR). Cles utilisees par ActivityLogger via action_key.
+ * Placeholders {x} sont injectes depuis le JSON params stocke en base.
+ */
+
+return [
+    // ---- Crime ----
+    'crime_success'  => 'Tu as réussi {crime_name} — +{credits} ¢, +{xp} XP, +{cat_xp} XP {cat_name}.',
+    'crime_fail'     => 'Tu as raté {crime_name}. Rien dans les poches.',
+    'crime_critical' => 'Tu t\'es planté sur {crime_name}. {destination_label} pour {minutes} min.',
+
+    // ---- Train ----
+    'train_success'  => 'Tu as entraîné {stat_name}, +{gain} (−{cost} énergie).',
+
+    // ---- Bust / Bail ----
+    'bust_success_by_me'    => 'Tu as bust <strong>{target}</strong>. Il/elle est libre.',
+    'bust_fail_by_me'       => 'Tu as raté ton bust sur <strong>{target}</strong> — {minutes} min de prison pour toi.',
+    'bust_success_on_me'    => '<strong>{author}</strong> t\'a bust de prison. Libre.',
+    'bail_paid_by_me'       => 'Tu as payé la caution de <strong>{target}</strong> pour {cost} ¢.',
+    'bail_paid_on_me'       => '<strong>{author}</strong> a payé ta caution ({cost} ¢). Libre.',
+
+    // ---- Mission ----
+    'mission_accept' => 'Tu as accepté la mission « {mission_name} » chez {fixer_name}.',
+    'mission_claim'  => 'Tu as réclamé la récompense de « {mission_name} » — +{credits} ¢, +{xp} XP.',
+
+    // ---- Progression ----
+    'level_up'       => 'Tu as atteint le niveau {level}.',
+
+    // ---- Etat ----
+    'sent_to_jail'      => 'Tu es envoyé en prison ({minutes} min).',
+    'sent_to_hospital'  => 'Tu es envoyé à la cyberclinique ({minutes} min).',
+    'released_from_jail'    => 'Tu es sorti de prison.',
+    'released_from_hospital'=> 'Tu es sorti de la cyberclinique.',
+
+    // ---- Destinations critiques (sous-clefs) ----
+    'destination_jail'     => 'Prison',
+    'destination_hospital' => 'Cyberclinique',
+];

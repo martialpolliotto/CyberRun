@@ -46,9 +46,15 @@ class Players extends BaseController
         }
 
         $query  = trim((string) $this->request->getGet('q'));
-        $result = model(PlayerModel::class)->searchByUsername($query, 30, $status);
+        $sort   = (string) $this->request->getGet('sort');
+        $bucket = (string) $this->request->getGet('lvl');
 
-        // Sur l'onglet "jail", calcule pour chaque ligne le cout bail + % bust estime, pour les boutons.
+        // Normalise (vide -> null).
+        $sort   = $sort !== '' ? $sort : null;
+        $bucket = $bucket !== '' ? $bucket : null;
+
+        $result = model(PlayerModel::class)->searchByUsername($query, 30, $status, $sort, $bucket);
+
         $me = function_exists('auth') && auth()->loggedIn()
             ? model(PlayerModel::class)->findByUserId((int) auth()->user()->id)
             : null;
@@ -68,6 +74,8 @@ class Players extends BaseController
             'pager'  => $result['pager'],
             'query'  => $query,
             'status' => $status,
+            'sort'   => $sort ?? '',
+            'bucket' => $bucket ?? 'all',
             'me'     => $me,
         ]);
     }

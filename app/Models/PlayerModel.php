@@ -117,31 +117,73 @@ class PlayerModel extends Model
         return $row;
     }
 
+    /** Tris autorises pour la liste des joueurs. */
+    public const PLAYER_SORTS = [
+        'username'    => 'Pseudo (A→Z)',
+        'level_desc'  => 'Niveau ↓',
+        'level_asc'   => 'Niveau ↑',
+        'joined_desc' => 'Inscription ↓ (récents)',
+        'joined_asc'  => 'Inscription ↑ (anciens)',
+    ];
+
+    /** Tranches de niveau pour le filtre. min/max inclusif, null = pas de borne. */
+    public const PLAYER_LEVEL_BUCKETS = [
+        'all'      => [null, null, 'Tous niveaux'],
+        'rookie'   => [1,    5,    'Débutants (1-5)'],
+        'mid'      => [6,    15,   'Mid (6-15)'],
+        'advanced' => [16,   30,   'Avancés (16-30)'],
+        'elite'    => [31,   null, 'Élite (31+)'],
+    ];
+
     /**
      * Recherche paginee par username (LIKE %query%). Joins users.
-     * $statusFilter : null = tous, 'jail' = en prison, 'hospital' = a la cyberclinique.
-     * Pour les filtres status, le tri se fait par temps restant croissant (les plus proches
-     * de la sortie en premier).
      *
+     * @param string|null $statusFilter null = tous, 'jail', 'hospital'
+     * @param string|null $sort         clef de PLAYER_SORTS (defaut depend du status)
+     * @param string|null $levelBucket  clef de PLAYER_LEVEL_BUCKETS (defaut 'all')
      * @return array{rows: array<int, array<string, mixed>>, pager: ?\CodeIgniter\Pager\PagerInterface}
      */
-    public function searchByUsername(string $query, int $perPage = 30, ?string $statusFilter = null): array
+    public function searchByUsername(string $query, int $perPage = 30, ?string $statusFilter = null, ?string $sort = null, ?string $levelBucket = null): array
     {
         $nowStr = Time::now()->toDateTimeString();
         $b = $this->select('players.id, players.level, players.in_jail_until, players.in_hospital_until, users.username, users.created_at AS joined_at')
             ->join('users', 'users.id = players.user_id', 'inner');
 
+        // Filtre status.
         if ($statusFilter === 'jail') {
-            $b = $b->where('players.in_jail_until >', $nowStr)->orderBy('players.in_jail_until', 'ASC');
+            $b = $b->where('players.in_jail_until >', $nowStr);
         } elseif ($statusFilter === 'hospital') {
-            $b = $b->where('players.in_hospital_until >', $nowStr)->orderBy('players.in_hospital_until', 'ASC');
-        } else {
-            $b = $b->orderBy('users.username');
+            $b = $b->where('players.in_hospital_until >', $nowStr);
         }
 
+        // Filtre tranche de niveau.
+        $bucketKey = isset(self::PLAYER_LEVEL_BUCKETS[$levelBucket]) ? $levelBucket : 'all';
+        [$minLvl, $maxLvl] = self::PLAYER_LEVEL_BUCKETS[$bucketKey];
+        if ($minLvl !== null) $b = $b->where('players.level >=', $minLvl);
+        if ($maxLvl !== null) $b = $b->where('players.level <=', $maxLvl);
+
+        // Recherche par pseudo.
         if ($query !== '') {
             $b = $b->like('users.username', $query);
         }
+
+        // Tri : si status jail/hospital sans tri explicite, on tri par temps restant croissant.
+        if ($sort === null) {
+            $sort = ($statusFilter === 'jail' || $statusFilter === 'hospital') ? null : 'username';
+        }
+        match ($sort) {
+            'level_desc'  => $b->orderBy('players.level', 'DESC')->orderBy('users.username'),
+            'level_asc'   => $b->orderBy('players.level', 'ASC')->orderBy('users.username'),
+            'joined_desc' => $b->orderBy('users.created_at', 'DESC')->orderBy('users.username'),
+            'joined_asc'  => $b->orderBy('users.created_at', 'ASC')->orderBy('users.username'),
+            'username'    => $b->orderBy('users.username', 'ASC'),
+            default       => ($statusFilter === 'jail')
+                ? $b->orderBy('players.in_jail_until', 'ASC')
+                : ($statusFilter === 'hospital'
+                    ? $b->orderBy('players.in_hospital_until', 'ASC')
+                    : $b->orderBy('users.username')),
+        };
+
         $rows = $b->paginate($perPage);
         foreach ($rows as &$r) {
             $r['_status'] = $this->resolvePublicStatus($r);
@@ -327,6 +369,13 @@ class PlayerModel extends Model
         $missions->trackEvent($playerId, 'train_stat', $statSlug);
         $missions->recheckThresholdsForPlayer($playerId);
 
+        // Activity log
+        \App\Services\ActivityLogger::log($playerId, 'train', 'Log.train_success', [
+            'stat_name' => ucfirst($statSlug),
+            'gain'      => self::TRAIN_STAT_GAIN,
+            'cost'      => self::TRAIN_ENERGY_COST,
+        ]);
+
         return [
             'ok'      => true,
             'message' => '+' . self::TRAIN_STAT_GAIN . ' ' . ucfirst($statSlug) . ' (-' . self::TRAIN_ENERGY_COST . ' énergie).',
@@ -349,8 +398,9 @@ class PlayerModel extends Model
             return;
         }
 
-        $level = (int) $player['level'];
-        $xp    = (int) $player['xp'] + $amount;
+        $oldLevel = (int) $player['level'];
+        $level    = $oldLevel;
+        $xp       = (int) $player['xp'] + $amount;
 
         while ($xp >= $level * 100) {
             $xp -= $level * 100;
@@ -361,6 +411,11 @@ class PlayerModel extends Model
             'level' => $level,
             'xp'    => $xp,
         ]);
+
+        // Activity log : un evenement par level franchi (rare, donc on peut se permettre).
+        for ($l = $oldLevel + 1; $l <= $level; $l++) {
+            \App\Services\ActivityLogger::log($playerId, 'level', 'Log.level_up', ['level' => $l]);
+        }
     }
 
     /**
@@ -712,9 +767,17 @@ class PlayerModel extends Model
         $pct  = $this->estimateBustPct($me, $target);
         $roll = random_int(0, 99);
 
+        $targetUsername = $this->resolveUsername($targetPlayerId);
+
         if ($roll < $pct) {
             // Succes : la cible sort.
             $this->update($targetPlayerId, ['in_jail_until' => null]);
+            $authorUsername = $this->resolveUsername($playerId);
+            // Log cote attaquant + cote cible.
+            \App\Services\ActivityLogger::log($playerId, 'social', 'Log.bust_success_by_me',
+                ['target' => $targetUsername], $targetPlayerId);
+            \App\Services\ActivityLogger::log($targetPlayerId, 'social', 'Log.bust_success_on_me',
+                ['author' => $authorUsername], $playerId);
             return [
                 'ok'          => true,
                 'message'     => 'Bust reussi ! Ta cible s\'evapore dans les ruelles.',
@@ -730,12 +793,25 @@ class PlayerModel extends Model
         $until   = $now->addMinutes($minutes)->toDateTimeString();
         $this->update($playerId, ['in_jail_until' => $until]);
 
+        \App\Services\ActivityLogger::log($playerId, 'social', 'Log.bust_fail_by_me',
+            ['target' => $targetUsername, 'minutes' => $minutes], $targetPlayerId);
+
         return [
             'ok'          => true,
             'message'     => 'Bust rate. Les gardes te chopent et te collent ' . $minutes . ' minutes au trou.',
             'outcome'     => 'fail',
             'success_pct' => $pct,
         ];
+    }
+
+    /** Helper : recupere le username d'un player via join sur users. */
+    private function resolveUsername(int $playerId): string
+    {
+        $row = $this->select('users.username')
+            ->join('users', 'users.id = players.user_id', 'inner')
+            ->where('players.id', $playerId)
+            ->first();
+        return (string) ($row['username'] ?? 'inconnu');
     }
 
     /**
@@ -789,6 +865,13 @@ class PlayerModel extends Model
         $this->update($targetPlayerId, ['in_jail_until' => null]);
 
         $db->transComplete();
+
+        $targetUsername = $this->resolveUsername($targetPlayerId);
+        $authorUsername = $this->resolveUsername($playerId);
+        \App\Services\ActivityLogger::log($playerId, 'social', 'Log.bail_paid_by_me',
+            ['target' => $targetUsername, 'cost' => $cost], $targetPlayerId);
+        \App\Services\ActivityLogger::log($targetPlayerId, 'social', 'Log.bail_paid_on_me',
+            ['author' => $authorUsername, 'cost' => $cost], $playerId);
 
         return [
             'ok'      => true,

@@ -285,13 +285,17 @@ class BotService
                 $window = random_int(6, 12);
                 $end    = ($start + $window) % 24;
                 $boost  = random_int(20, 80);
-                $playerModel->update($player['id'], [
+
+                // Stats randomisees pour simuler un passe de jeu (pyramide : peu de gros profils).
+                $seed = $this->generateRandomPlayerStats($persona);
+
+                $playerModel->update($player['id'], array_merge([
                     'is_bot'                => 1,
                     'bot_persona'           => $persona,
                     'bot_active_hour_start' => $start,
                     'bot_active_hour_end'   => $end,
                     'bot_weekend_boost_pct' => $boost,
-                ]);
+                ], $seed));
                 $created++;
             } catch (\Throwable $e) {
                 $errors[] = $username . ' : ' . $e->getMessage();
@@ -489,6 +493,66 @@ class BotService
         $pick = $completed[array_rand($completed)];
         $r = $missions->claim((int) $bot['id'], (int) $pick['mission_id']);
         return $r['ok'] ? 'mission_claim' : null;
+    }
+
+    /**
+     * Genere un "passe de jeu" plausible pour un bot : niveau, stats, credits, xp courant.
+     * Distribution pyramidale (peu de gros profils), avec biais selon persona sur les stats.
+     *
+     * @return array<string, int>
+     */
+    private function generateRandomPlayerStats(string $persona): array
+    {
+        // Distribution pyramidale du niveau via une roulette ponderee.
+        $level = (int) $this->weightedPick([
+            '1'  => 25, '2'  => 20, '3'  => 15,
+            '5'  => 12, '7'  => 8,  '10' => 7,
+            '14' => 5,  '18' => 4,  '23' => 2,
+            '30' => 1,  '40' => 1,
+        ]);
+        $level = max(1, $level + random_int(-1, 2)); // jitter doux autour du palier
+
+        // Stats : base proportionnelle au niveau + biais persona.
+        $baseStat = static fn() => 10 + (int) round($level * (1.5 + (random_int(0, 100) / 100)));
+        $force    = $baseStat();
+        $blindage = $baseStat();
+        $reflexes = $baseStat();
+        $hack     = $baseStat();
+
+        // Biais persona : la "specialite" gagne +50% par rapport a la base.
+        $bias = static fn(int $v) => (int) round($v * (1 + random_int(20, 60) / 100));
+        switch ($persona) {
+            case 'criminel':
+                $reflexes = $bias($reflexes); $hack = $bias($hack);
+                break;
+            case 'athlete':
+                $force = $bias($force); $blindage = $bias($blindage);
+                break;
+            case 'trafiquant':
+                $hack = $bias($hack); $reflexes = $bias($reflexes);
+                break;
+            // lambda : pas de bias, profil equilibre
+        }
+
+        // Credits : proportionnel au niveau + bonus trafiquant.
+        $creditsBase = $level * random_int(40, 250);
+        if ($persona === 'trafiquant') {
+            $creditsBase = (int) round($creditsBase * 1.5);
+        }
+        $credits = max(50, $creditsBase);
+
+        // XP courant : random entre 0 et (level*100 - 1).
+        $xp = random_int(0, max(0, $level * 100 - 1));
+
+        return [
+            'level'         => $level,
+            'xp'            => $xp,
+            'credits'       => $credits,
+            'stat_force'    => $force,
+            'stat_blindage' => $blindage,
+            'stat_reflexes' => $reflexes,
+            'stat_hack'     => $hack,
+        ];
     }
 
     /**

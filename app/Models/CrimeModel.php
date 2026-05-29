@@ -202,6 +202,12 @@ class CrimeModel extends Model
                 ? "\n\n→ Cyberclinique pour " . $minutes . ' minutes.'
                 : "\n\n→ Coffre pour " . $minutes . ' minutes.';
 
+            \App\Services\ActivityLogger::log($playerId, 'crime', 'Log.crime_critical', [
+                'crime_name'        => $crime['name'],
+                'destination_label' => lang('Log.destination_' . $dest),
+                'minutes'           => $minutes,
+            ], null, (int) $crime['id']);
+
             return [
                 'ok'                   => true,
                 'message'              => $narrative . $suffix,
@@ -257,6 +263,14 @@ class CrimeModel extends Model
             $narrative = $variant['text'] ?? 'Reussite.';
             $suffix    = "\n\n→ +" . $credits . ' credits · +' . $xp . ' XP · +' . $catXp . ' XP ' . $category['name'];
 
+            \App\Services\ActivityLogger::log($playerId, 'crime', 'Log.crime_success', [
+                'crime_name' => $crime['name'],
+                'credits'    => $credits,
+                'xp'         => $xp,
+                'cat_xp'     => $catXp,
+                'cat_name'   => $category['name'],
+            ], null, (int) $crime['id']);
+
             return [
                 'ok'                  => true,
                 'message'             => $narrative . $suffix,
@@ -274,6 +288,10 @@ class CrimeModel extends Model
 
         $variant   = model(CrimeTextModel::class)->pickRandom((int) $crime['id'], 'fail');
         $narrative = $variant['text'] ?? 'Echec : la tentative a foire, tu rentres bredouille.';
+
+        \App\Services\ActivityLogger::log($playerId, 'crime', 'Log.crime_fail', [
+            'crime_name' => $crime['name'],
+        ], null, (int) $crime['id']);
 
         return [
             'ok'           => true,
