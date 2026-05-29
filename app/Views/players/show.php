@@ -1,6 +1,8 @@
 <?= $this->extend('layouts/main') ?>
 
 <?php
+    helper('number');
+
     $statusBadge = static function (string $status): string {
         return match ($status) {
             'jail'     => '<span class="badge bg-dark">En prison</span>',
@@ -8,60 +10,226 @@
             default    => '<span class="badge bg-light text-muted">Libre</span>',
         };
     };
+
+    $isSelf = $me !== null && (int) $me['id'] === (int) $profile['id'];
+    $myId   = $me !== null ? (int) $me['id'] : 0;
+    $targetId = (int) $profile['id'];
 ?>
 
 <?= $this->section('content') ?>
 
-<div class="mx-auto" style="max-width: 48rem;">
+<div class="mx-auto" style="max-width: 56rem;">
 
     <div class="small mb-3">
         <a href="/players" class="text-muted text-decoration-none">← Tous les joueurs</a>
     </div>
 
-    <div class="card">
+    <?php if (session()->has('message')): ?>
+        <?= view('partials/alert', ['variant' => 'success', 'message' => session('message')]) ?>
+    <?php endif ?>
+    <?php if (session()->has('error')): ?>
+        <?= view('partials/alert', ['variant' => 'danger', 'message' => session('error')]) ?>
+    <?php endif ?>
+
+    <!-- Carte identité -->
+    <div class="card mb-3">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
                 <div>
                     <h1 class="h3 mb-1"><?= esc($profile['username']) ?></h1>
                     <p class="text-muted small mb-0">
-                        Inscrit le <?= esc(\CodeIgniter\I18n\Time::parse($profile['joined_at'])->toLocalizedString('d MMMM yyyy')) ?>
+                        Niveau <strong><?= (int) $profile['level'] ?></strong> ·
+                        inscrit le <?= esc(\CodeIgniter\I18n\Time::parse($profile['joined_at'])->toLocalizedString('d MMMM yyyy')) ?>
                     </p>
                 </div>
-                <div class="text-end">
-                    <?= $statusBadge((string) $profile['_status']) ?>
-                </div>
+                <div class="text-end"><?= $statusBadge((string) $profile['_status']) ?></div>
             </div>
 
-            <hr>
-
-            <div class="row text-center">
-                <div class="col">
-                    <div class="small text-muted text-uppercase">Niveau</div>
-                    <div class="fs-3 fw-bold mt-1"><?= (int) $profile['level'] ?></div>
-                </div>
-            </div>
-
-            <?php if ($profile['_status'] === 'jail' && $me !== null && (int) $me['id'] !== (int) $profile['id']): ?>
+            <?php if (! $isSelf && $me !== null): ?>
+                <!-- Barre d'actions PvP / sociales -->
                 <hr>
-                <div class="small text-uppercase text-muted fw-semibold mb-2">Le faire sortir</div>
-                <div class="d-flex gap-2 flex-wrap">
-                    <form method="post" action="/bust/<?= (int) $profile['id'] ?>" class="m-0" onsubmit="return confirm('Tenter un bust ? Echec = toi en prison.');">
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                    <form method="post" action="/attack/<?= $targetId ?>" class="m-0">
                         <?= csrf_field() ?>
-                        <button type="submit" class="btn btn-outline-dark">Bust (chance <?= (int) ($profile['_bust_pct'] ?? 0) ?>%)</button>
+                        <button type="submit" class="btn btn-outline-dark btn-sm" title="Attaquer">⚔ Attaquer</button>
                     </form>
-                    <form method="post" action="/bail/<?= (int) $profile['id'] ?>" class="m-0" onsubmit="return confirm('Payer la caution (<?= (int) ($profile['_bail_cost'] ?? 0) ?> credits) ?');">
+                    <form method="post" action="/message/<?= $targetId ?>" class="m-0">
                         <?= csrf_field() ?>
-                        <button type="submit" class="btn btn-dark">Payer caution (¢<?= number_format((int) ($profile['_bail_cost'] ?? 0)) ?>)</button>
+                        <button type="submit" class="btn btn-outline-dark btn-sm" title="Envoyer un message">✉ Msg</button>
+                    </form>
+                    <form method="post" action="/chat/<?= $targetId ?>" class="m-0">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="btn btn-outline-dark btn-sm" title="Chatter en direct">⌖ Chat</button>
+                    </form>
+                    <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#modal-transfer" title="Envoyer des crédits">¢ Argent</button>
+                    <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#modal-bounty" title="Placer une prime">☠ Prime</button>
+                    <form method="post" action="/spy/<?= $targetId ?>" class="m-0">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="btn btn-outline-dark btn-sm" title="Espionner ses stats">◉ Espion</button>
+                    </form>
+
+                    <span class="vr"></span>
+
+                    <?php
+                        $rm = model(\App\Models\PlayerRelationModel::class);
+                        $isFriend = $rm->has($myId, $targetId, 'friend');
+                        $isEnemy  = $rm->has($myId, $targetId, 'enemy');
+                        $isTarget = $rm->has($myId, $targetId, 'target');
+                    ?>
+                    <form method="post" action="/relations/friend/<?= $targetId ?>" class="m-0">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="btn btn-sm <?= $isFriend ? 'btn-dark' : 'btn-outline-dark' ?>" title="Ami">★ Ami</button>
+                    </form>
+                    <form method="post" action="/relations/enemy/<?= $targetId ?>" class="m-0">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="btn btn-sm <?= $isEnemy ? 'btn-dark' : 'btn-outline-dark' ?>" title="Ennemi">✕ Ennemi</button>
+                    </form>
+                    <form method="post" action="/relations/target/<?= $targetId ?>" class="m-0">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="btn btn-sm <?= $isTarget ? 'btn-dark' : 'btn-outline-dark' ?>" title="Cible">⊙ Cible</button>
                     </form>
                 </div>
-                <p class="form-text mt-2 mb-0">Bust : risqué, consomme de la nerve, échec = toi en prison. Bail : garanti, coûte des crédits.</p>
             <?php endif ?>
         </div>
     </div>
 
-    <p class="form-text mt-3 mb-0">
-        Plus d'infos sur ce joueur (combat, gangs, historique) viendront avec les prochaines mécaniques.
-    </p>
+    <!-- Stats combat publiques (pas de stats brutes, juste des compteurs) -->
+    <div class="card mb-3">
+        <div class="card-header bg-light small text-uppercase fw-semibold">Statistiques de combat</div>
+        <div class="card-body">
+            <div class="row g-3 text-center">
+                <?php
+                    $cs = $combat_stats;
+                    $cells = [
+                        'Attaques réussies' => (int) $cs['attacks_won'],
+                        'Attaques ratées'   => (int) $cs['attacks_lost'],
+                        'Défenses tenues'   => (int) $cs['defenses_won'],
+                        'Défenses perdues'  => (int) $cs['defenses_lost'],
+                        'Kills'             => (int) $cs['kills'],
+                        'Morts'             => (int) $cs['deaths'],
+                        'Kill streak'       => (int) $cs['kill_streak'],
+                        'Meilleur streak'   => (int) $cs['best_kill_streak'],
+                    ];
+                ?>
+                <?php foreach ($cells as $label => $value): ?>
+                    <div class="col-6 col-md-3">
+                        <div class="small text-muted text-uppercase"><?= esc($label) ?></div>
+                        <div class="fs-4 fw-bold font-monospace"><?= number_format($value) ?></div>
+                    </div>
+                <?php endforeach ?>
+            </div>
+            <p class="form-text text-center mt-3 mb-0">Les stats brutes (Force / Blindage / Réflexes / Hack) sont privées. Utilise <strong>Espion</strong> pour les obtenir (à venir).</p>
+        </div>
+    </div>
+
+    <!-- Bounty actives sur la cible -->
+    <?php if (! empty($active_bounties)): ?>
+        <div class="card mb-3">
+            <div class="card-header bg-light small text-uppercase fw-semibold d-flex justify-content-between">
+                <span>Primes actives sur sa tête</span>
+                <span class="badge bg-dark"><?= count($active_bounties) ?></span>
+            </div>
+            <ul class="list-group list-group-flush small">
+                <?php foreach ($active_bounties as $b): ?>
+                    <li class="list-group-item d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>¢<?= number_format((int) $b['amount']) ?></strong>
+                            par <a href="/u/<?= esc($b['placer_username']) ?>" class="text-dark text-decoration-none fw-semibold"><?= esc($b['placer_username']) ?></a>
+                            <?php if (! empty($b['message'])): ?>
+                                <div class="text-muted fst-italic mt-1">« <?= esc($b['message']) ?> »</div>
+                            <?php endif ?>
+                        </div>
+                        <?php if ((int) $b['placer_player_id'] === $myId): ?>
+                            <form method="post" action="/bounties/<?= (int) $b['id'] ?>/cancel" class="m-0" onsubmit="return confirm('Annuler la prime ? Tes <?= number_format((int) $b['amount']) ?> ¢ te seront remboursés.');">
+                                <?= csrf_field() ?>
+                                <button type="submit" class="btn btn-sm btn-outline-dark">Annuler</button>
+                            </form>
+                        <?php endif ?>
+                    </li>
+                <?php endforeach ?>
+            </ul>
+        </div>
+    <?php endif ?>
+
+    <!-- Section bust/bail si en prison (déjà là avant la refonte) -->
+    <?php if ($profile['_status'] === 'jail' && ! $isSelf && $me !== null): ?>
+        <div class="card mb-3">
+            <div class="card-header bg-light small text-uppercase fw-semibold">Le faire sortir</div>
+            <div class="card-body">
+                <div class="d-flex gap-2 flex-wrap">
+                    <form method="post" action="/bust/<?= $targetId ?>" class="m-0" onsubmit="return confirm('Tenter un bust ? Échec = toi en prison.');">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="btn btn-outline-dark">Bust (chance <?= (int) ($profile['_bust_pct'] ?? 0) ?>%)</button>
+                    </form>
+                    <form method="post" action="/bail/<?= $targetId ?>" class="m-0" onsubmit="return confirm('Payer la caution (<?= (int) ($profile['_bail_cost'] ?? 0) ?> credits) ?');">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="btn btn-dark">Payer caution (¢<?= number_format((int) ($profile['_bail_cost'] ?? 0)) ?>)</button>
+                    </form>
+                </div>
+                <p class="form-text mt-2 mb-0">Bust : risqué, consomme de la nerve. Bail : garanti, coûte des crédits.</p>
+            </div>
+        </div>
+    <?php endif ?>
+
+    <!-- Modal envoi crédits -->
+    <?php if (! $isSelf && $me !== null): ?>
+    <div class="modal fade" id="modal-transfer" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" action="/transfer">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="target_player_id" value="<?= $targetId ?>">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Envoyer des crédits à <?= esc($profile['username']) ?></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label small">Montant (¢)</label>
+                            <input type="number" name="amount" min="1" max="<?= (int) $me['credits'] ?>" required class="form-control font-monospace">
+                            <div class="form-text">Ton solde : <strong>¢<?= number_format((int) $me['credits']) ?></strong></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-dark">Envoyer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal placer prime -->
+    <div class="modal fade" id="modal-bounty" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" action="/bounties/place">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="target_player_id" value="<?= $targetId ?>">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Placer une prime sur <?= esc($profile['username']) ?></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label small">Montant de la prime (¢)</label>
+                            <input type="number" name="amount" min="1" max="<?= (int) $me['credits'] ?>" required class="form-control font-monospace">
+                            <div class="form-text">Le tueur qui finalisera la cible empochera le pot. Ton solde : <strong>¢<?= number_format((int) $me['credits']) ?></strong>.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small">Message (optionnel)</label>
+                            <textarea name="message" rows="2" maxlength="255" class="form-control" placeholder="« Cette ordure a vendu ma soeur aux corpos. »"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-dark">Placer la prime</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <?php endif ?>
 
 </div>
 

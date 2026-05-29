@@ -45,6 +45,19 @@ $routes->group('', ['filter' => ['session', 'free']], static function ($routes) 
     $routes->post('bust/(:num)', 'Players::bust/$1');
     $routes->post('bail/(:num)', 'Players::bail/$1');
 
+    // Social : relations (toggle ami/ennemi/cible), bounties, transferts d'argent.
+    $routes->post('relations/(:segment)/(:num)', 'Relations::toggle/$1/$2');
+    $routes->get('bounties',                     'Bounties::index');
+    $routes->post('bounties/place',              'Bounties::place');
+    $routes->post('bounties/(:num)/cancel',      'Bounties::cancel/$1');
+    $routes->post('transfer',                    'Transfer::send');
+
+    // Stubs combat / messages / chat / espionnage (boutons visibles, feature future).
+    $routes->post('attack/(:num)',  'Players::stubAttack/$1');
+    $routes->post('message/(:num)', 'Players::stubMessage/$1');
+    $routes->post('chat/(:num)',    'Players::stubChat/$1');
+    $routes->post('spy/(:num)',     'Players::stubSpy/$1');
+
     $routes->get('shops', 'Shops::index');
     $routes->get('shop/(:segment)', 'Shops::show/$1');
     $routes->post('shop/(:segment)/buy/(:num)', 'Shops::buy/$1/$2');

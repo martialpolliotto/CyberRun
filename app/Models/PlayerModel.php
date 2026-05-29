@@ -804,6 +804,61 @@ class PlayerModel extends Model
         ];
     }
 
+    /**
+     * Transfere des credits d'un joueur a un autre. Atomique. Log activite des 2 cotes.
+     *
+     * @return array{ok: bool, message: string}
+     */
+    public function transferCredits(int $playerId, int $targetPlayerId, int $amount, ?string $note = null): array
+    {
+        if ($playerId === $targetPlayerId) {
+            return ['ok' => false, 'message' => 'Tu ne peux pas t\'envoyer de l\'argent.'];
+        }
+        if ($amount <= 0) {
+            return ['ok' => false, 'message' => 'Montant invalide.'];
+        }
+
+        $me     = $this->find($playerId);
+        $target = $this->find($targetPlayerId);
+        if ($me === null || $target === null) {
+            return ['ok' => false, 'message' => 'Joueur introuvable.'];
+        }
+        if ((int) $me['credits'] < $amount) {
+            return ['ok' => false, 'message' => 'Credits insuffisants.'];
+        }
+
+        $db  = db_connect();
+        $db->transStart();
+
+        $this->builder()
+            ->where('id', $playerId)
+            ->where('credits >=', $amount)
+            ->update([
+                'credits'    => new \CodeIgniter\Database\RawSql('credits - ' . $amount),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+        if ($db->affectedRows() === 0) {
+            $db->transRollback();
+            return ['ok' => false, 'message' => 'Credits insuffisants au moment du paiement.'];
+        }
+        $this->builder()
+            ->where('id', $targetPlayerId)
+            ->update([
+                'credits'    => new \CodeIgniter\Database\RawSql('credits + ' . $amount),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+        $db->transComplete();
+
+        $targetUsername = $this->resolveUsername($targetPlayerId);
+        $authorUsername = $this->resolveUsername($playerId);
+        \App\Services\ActivityLogger::log($playerId, 'eco', 'Log.transfer_sent',
+            ['target' => $targetUsername, 'amount' => $amount], $targetPlayerId);
+        \App\Services\ActivityLogger::log($targetPlayerId, 'eco', 'Log.transfer_received',
+            ['author' => $authorUsername, 'amount' => $amount], $playerId);
+
+        return ['ok' => true, 'message' => $amount . ' credits envoyes a ' . esc($targetUsername) . '.'];
+    }
+
     /** Helper : recupere le username d'un player via join sur users. */
     private function resolveUsername(int $playerId): string
     {

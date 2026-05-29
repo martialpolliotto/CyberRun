@@ -37,4 +37,16 @@ return [
     // ---- Critical destinations ----
     'destination_jail'     => 'Jail',
     'destination_hospital' => 'Cyberclinic',
+
+    // ---- Money transfers ----
+    'transfer_sent'     => 'You sent {amount} ¢ to <strong>{target}</strong>.',
+    'transfer_received' => '<strong>{author}</strong> sent you {amount} ¢.',
+
+    // ---- Bounty ----
+    'bounty_placed'  => 'You placed a {amount} ¢ bounty on <strong>{target}</strong>.',
+    'bounty_claimed' => 'You collected a {amount} ¢ bounty on <strong>{target}</strong>.',
+
+    // ---- Relations (friend / enemy / target) ----
+    'relation_added'   => 'You added <strong>{target}</strong> to your {type}s.',
+    'relation_removed' => 'You removed <strong>{target}</strong> from your {type}s.',
 ];

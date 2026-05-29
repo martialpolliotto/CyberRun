@@ -24,6 +24,24 @@ class Players extends BaseController
         return redirect()->to('/players/jail')->with($result['ok'] ? 'message' : 'error', $result['message']);
     }
 
+    /** Stubs pour features a venir : attaque, messages, chat live, espionnage de stats. */
+    public function stubAttack(int $targetPlayerId)  { return $this->stubRedirect($targetPlayerId, 'Combat à venir.'); }
+    public function stubMessage(int $targetPlayerId) { return $this->stubRedirect($targetPlayerId, 'Messagerie à venir.'); }
+    public function stubChat(int $targetPlayerId)    { return $this->stubRedirect($targetPlayerId, 'Chat à venir.'); }
+    public function stubSpy(int $targetPlayerId)     { return $this->stubRedirect($targetPlayerId, 'Espionnage de stats à venir.'); }
+
+    private function stubRedirect(int $targetPlayerId, string $message)
+    {
+        $row = db_connect()->table('players p')
+            ->select('users.username')
+            ->join('users', 'users.id = p.user_id', 'inner')
+            ->where('p.id', $targetPlayerId)
+            ->get()->getRowArray();
+        $username = $row['username'] ?? null;
+        $url = $username !== null ? '/u/' . $username : '/players';
+        return redirect()->to($url)->with('error', $message);
+    }
+
     /** Paie la caution d'un detenu : sortie immediate de la cible. */
     public function bail(int $targetPlayerId)
     {
@@ -101,8 +119,10 @@ class Players extends BaseController
         }
 
         return view('players/show', [
-            'profile' => $player,
-            'me'      => $me,
+            'profile'         => $player,
+            'me'              => $me,
+            'combat_stats'    => model(\App\Models\PlayerCombatStatsModel::class)->getOrCreate((int) $player['id']),
+            'active_bounties' => model(\App\Models\BountyModel::class)->activeOnTarget((int) $player['id']),
         ]);
     }
 }

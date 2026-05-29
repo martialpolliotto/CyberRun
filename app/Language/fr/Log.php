@@ -37,4 +37,16 @@ return [
     // ---- Destinations critiques (sous-clefs) ----
     'destination_jail'     => 'Prison',
     'destination_hospital' => 'Cyberclinique',
+
+    // ---- Transferts d'argent ----
+    'transfer_sent'     => 'Tu as envoyé {amount} ¢ à <strong>{target}</strong>.',
+    'transfer_received' => '<strong>{author}</strong> t\'a envoyé {amount} ¢.',
+
+    // ---- Bounty ----
+    'bounty_placed'  => 'Tu as placé une prime de {amount} ¢ sur <strong>{target}</strong>.',
+    'bounty_claimed' => 'Tu as encaissé une prime de {amount} ¢ sur la tête de <strong>{target}</strong>.',
+
+    // ---- Relations (ami / ennemi / cible) ----
+    'relation_added'   => 'Tu as ajouté <strong>{target}</strong> à tes {type}s.',
+    'relation_removed' => 'Tu as retiré <strong>{target}</strong> de tes {type}s.',
 ];

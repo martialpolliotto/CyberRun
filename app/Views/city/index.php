@@ -94,6 +94,18 @@
         </div>
     </div>
 
+    <h2 class="small text-uppercase text-muted fw-semibold mb-2">Marché noir</h2>
+    <div class="row g-3 mb-4">
+        <div class="col-md-12">
+            <a href="/bounties" class="card text-decoration-none text-dark h-100">
+                <div class="card-body">
+                    <div class="fw-bold">Primes (bounties)</div>
+                    <p class="small text-muted mb-0">Liste des têtes mises à prix dans Chrome City. Le tueur empoche le pot.</p>
+                </div>
+            </a>
+        </div>
+    </div>
+
 </div>
 
 <?= $this->endSection() ?>
