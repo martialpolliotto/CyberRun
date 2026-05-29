@@ -39,7 +39,7 @@ $cell = static function (string $label, int $current, int $max, int $pct): strin
 <div class="bg-light border-bottom">
     <div class="container py-2 d-flex align-items-center flex-wrap gap-3 small">
 
-        <?= $cell('HP',  (int) $player['hp_current'],     (int) $player['hp_max'],     $hpPct) ?>
+        <?= $cell('Life', (int) $player['hp_current'],     (int) $player['hp_max'],     $hpPct) ?>
         <?= $cell('NRG', (int) $player['energy_current'], (int) $player['energy_max'], $energyPct) ?>
         <?= $cell('NRV', (int) $player['nerve_current'],  (int) $player['nerve_max'],  $nervePct) ?>
 

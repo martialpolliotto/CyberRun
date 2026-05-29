@@ -33,11 +33,24 @@ class PlayerModel extends Model
         'addiction_updated_at',
         'last_booster_at',
         'last_drug_at',
+        'last_combat_at',
         'is_bot',
         'bot_persona',
         'bot_active_hour_start',
         'bot_active_hour_end',
         'bot_weekend_boost_pct',
+        'sex',
+        'job',
+        'job_position_id',
+        'job_xp',
+        'job_stat_tech',
+        'job_stat_endurance',
+        'job_stat_charisme',
+        'last_salary_at',
+        'last_work_at',
+        'faction_id',
+        'married_to_player_id',
+        'is_donator',
     ];
 
     /** Couts et probas de l'evasion solo depuis la prison. */
@@ -48,6 +61,7 @@ class PlayerModel extends Model
 
     /** Decay journalier du seuil de dependance (points par jour ecoule depuis le dernier check). */
     public const ADDICTION_DAILY_DECAY = 10;
+
 
     /**
      * Paliers de dependance et leurs effets negatifs. Tries du plus eleve au plus bas.
@@ -646,7 +660,7 @@ class PlayerModel extends Model
         $db->transComplete();
 
         $bits = [];
-        if ((int) $row['effect_hp']  > 0) $bits[] = '+' . (int) $row['effect_hp']  . ' HP';
+        if ((int) $row['effect_hp']  > 0) $bits[] = '+' . (int) $row['effect_hp']  . ' Life';
         if ((int) $row['effect_nrg'] > 0) $bits[] = '+' . (int) $row['effect_nrg'] . ' NRG';
         if ((int) $row['effect_nrv'] > 0) $bits[] = '+' . (int) $row['effect_nrv'] . ' NRV';
         if ($hasTemporary) $bits[] = 'effet temporaire actif';
@@ -934,4 +948,42 @@ class PlayerModel extends Model
             'cost'    => $cost,
         ];
     }
+
+    /**
+     * Postule a un job : le joueur quitte son job actuel (s'il en a un, reset XP) et
+     * commence au rank 1 du nouveau job.
+     *
+     * @return array{ok:bool, message:string}
+     */
+    public function applyToJob(int $playerId, string $jobSlug): array
+    {
+        $job = model(JobModel::class)->findBySlug($jobSlug);
+        if ($job === null) {
+            return ['ok' => false, 'message' => 'Job introuvable.'];
+        }
+        $rank1 = model(JobPositionModel::class)->where('job_id', $job['id'])->where('rank', 1)->first();
+        if ($rank1 === null) {
+            return ['ok' => false, 'message' => 'Job mal configure (pas de rank 1).'];
+        }
+
+        $this->update($playerId, [
+            'job'             => $jobSlug,
+            'job_position_id' => (int) $rank1['id'],
+            'job_xp'          => 0,
+            'last_salary_at'  => Time::now()->toDateTimeString(),
+        ]);
+        return ['ok' => true, 'message' => 'Embauche dans ' . esc($job['name']) . ' comme ' . esc($rank1['name']) . '.'];
+    }
+
+    public function quitJob(int $playerId): array
+    {
+        $this->update($playerId, [
+            'job'             => null,
+            'job_position_id' => null,
+            'job_xp'          => 0,
+            'last_salary_at'  => null,
+        ]);
+        return ['ok' => true, 'message' => 'Demission validee.'];
+    }
+
 }

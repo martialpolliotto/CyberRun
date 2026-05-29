@@ -41,6 +41,42 @@ class ItemModel extends Model
     /** Types de consommables (kind d'effet actif que ca peut produire). */
     public const CONSUMABLE_TYPES = ['booster', 'drug'];
 
+    /** Categories haut niveau utilisees par le filtre inventory (derivees de slot + consumable_type). */
+    public const CATEGORIES = [
+        'all'        => 'Tous',
+        'equipped'   => 'Équipés',
+        'available'  => 'Disponibles',
+        'weapon'     => 'Armes',
+        'protection' => 'Protection',
+        'cyberware'  => 'Cyberware',
+        'booster'    => 'Boosters',
+        'drug'       => 'Drogues',
+    ];
+
+    /** Slot -> categorie haut niveau (uniquement pour les items d'equipement, pas pour les consommables). */
+    public const SLOT_TO_CATEGORY = [
+        'arme1'       => 'weapon',
+        'arme2'       => 'weapon',
+        'optique'     => 'protection',
+        'combinaison' => 'protection',
+        'bottes'      => 'protection',
+        'cyberdeck'   => 'cyberware',
+    ];
+
+    /**
+     * Resout la categorie haut niveau d'un item (utilise pour les filtres / regroupement UI).
+     *
+     * @param array<string,mixed> $item
+     */
+    public static function resolveCategory(array $item): string
+    {
+        $type = $item['consumable_type'] ?? ($item['item_consumable_type'] ?? null);
+        if ($type === 'booster') return 'booster';
+        if ($type === 'drug')    return 'drug';
+        $slot = $item['slot'] ?? ($item['item_slot'] ?? '');
+        return self::SLOT_TO_CATEGORY[$slot] ?? 'misc';
+    }
+
     public function findStarters(): array
     {
         return $this->where('starter', 1)->where('discontinued', 0)->findAll();

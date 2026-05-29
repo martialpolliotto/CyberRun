@@ -34,66 +34,25 @@
         </div>
     </div>
 
-    <?php if (session()->has('message')): ?>
-        <?= view('partials/alert', ['variant' => 'success', 'message' => session('message')]) ?>
-    <?php endif ?>
-    <?php if (session()->has('error')): ?>
-        <?= view('partials/alert', ['variant' => 'danger', 'message' => session('error')]) ?>
-    <?php endif ?>
-
-    <?php if (empty($crimes)): ?>
-        <p class="text-muted fst-italic small">Aucun crime configuré dans cette catégorie.</p>
-    <?php else: ?>
-        <div class="d-flex flex-column gap-3">
-            <?php foreach ($crimes as $c): ?>
-                <div class="card <?= $c['_unlocked'] ? '' : 'text-muted' ?>">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
-                            <div class="flex-grow-1" style="min-width: 16rem;">
-                                <div class="d-flex align-items-center gap-2 mb-1">
-                                    <h2 class="h6 mb-0"><?= esc($c['name']) ?></h2>
-                                    <?php if (! $c['_unlocked']): ?>
-                                        <span class="badge bg-secondary">verrouillé · <?= (int) $c['min_category_xp'] ?> XP</span>
-                                    <?php endif ?>
-                                    <?php if ($c['_time_bonus_on']): ?>
-                                        <span class="badge bg-dark">+<?= (int) $c['time_bonus_pct'] ?>% bonus horaire</span>
-                                    <?php endif ?>
-                                </div>
-                                <?php if (! empty($c['description'])): ?>
-                                    <p class="small mb-2"><?= esc($c['description']) ?></p>
-                                <?php endif ?>
-                                <div class="d-flex flex-wrap gap-3 small">
-                                    <span><span class="text-muted text-uppercase">Nerve</span> <strong><?= (int) $c['nerve_cost'] ?></strong></span>
-                                    <span><span class="text-muted text-uppercase">Réussite</span> <strong><?= (int) $c['_success_pct'] ?>%</strong></span>
-                                    <span><span class="text-muted text-uppercase">Échec critique</span> <strong><?= (int) $c['critical_fail_pct'] ?>%</strong></span>
-                                    <span><span class="text-muted text-uppercase">Gain</span> <strong>¢<?= number_format((int) $c['reward_credits_min']) ?>–<?= number_format((int) $c['reward_credits_max']) ?></strong></span>
-                                    <span><span class="text-muted text-uppercase">XP</span> <strong>+<?= (int) $c['reward_xp'] ?> joueur / +<?= (int) $c['reward_category_xp'] ?> cat.</strong></span>
-                                </div>
-                                <div class="small text-muted mt-1">
-                                    Échec critique → <?= $c['critical_destination'] === 'hospital' ? 'cyberclinique' : 'prison' ?>
-                                    (<?= (int) $c['critical_minutes_min'] ?>–<?= (int) $c['critical_minutes_max'] ?> min).
-                                </div>
-                            </div>
-                            <div>
-                                <?php if ($c['_unlocked']): ?>
-                                    <form method="post" action="/crimes/attempt/<?= (int) $c['id'] ?>" class="m-0">
-                                        <?= csrf_field() ?>
-                                        <button type="submit"
-                                                <?= (int) $player['nerve_current'] < (int) $c['nerve_cost'] ? 'disabled' : '' ?>
-                                                class="btn btn-dark">
-                                            <?= (int) $player['nerve_current'] < (int) $c['nerve_cost'] ? 'Nerve insuffisante' : 'Tenter (-' . (int) $c['nerve_cost'] . ' NRV)' ?>
-                                        </button>
-                                    </form>
-                                <?php else: ?>
-                                    <button type="button" class="btn btn-outline-secondary" disabled>Verrouillé</button>
-                                <?php endif ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            <?php endforeach ?>
-        </div>
-    <?php endif ?>
+    <?php
+        // Au premier render on prend le flash de la session. Les rechargements HTMX
+        // recevront leur propre flash_variant/flash_message depuis le controller.
+        $initialFlashVariant = null;
+        $initialFlashMessage = null;
+        if (session()->has('message')) {
+            $initialFlashVariant = 'success';
+            $initialFlashMessage = session('message');
+        } elseif (session()->has('error')) {
+            $initialFlashVariant = 'danger';
+            $initialFlashMessage = session('error');
+        }
+    ?>
+    <?= view('crimes/_list', [
+        'player'        => $player,
+        'crimes'        => $crimes,
+        'flash_variant' => $initialFlashVariant,
+        'flash_message' => $initialFlashMessage,
+    ]) ?>
 
 </div>
 

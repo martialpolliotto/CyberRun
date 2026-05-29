@@ -62,7 +62,7 @@
                     <th>Persona</th>
                     <th>Niveau</th>
                     <th>Crédits</th>
-                    <th>NRG / NRV / HP</th>
+                    <th>NRG / NRV / Life</th>
                     <th>Status</th>
                     <th class="text-end">Actions</th>
                 </tr>

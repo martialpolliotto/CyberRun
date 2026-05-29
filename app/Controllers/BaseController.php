@@ -42,4 +42,20 @@ abstract class BaseController extends Controller
         // Preload any models, libraries, etc, here.
         // $this->session = service('session');
     }
+
+    /** True si la requete vient de htmx (header HX-Request: true). */
+    protected function isHtmx(): bool
+    {
+        return $this->request->getHeaderLine('HX-Request') === 'true';
+    }
+
+    /**
+     * Helper : ajoute un header HX-Redirect a une response pour forcer un full navigate
+     * cote client. Utile quand l'action a un effet hors de la zone affichee (ex: critique
+     * combat envoie a /jail).
+     */
+    protected function htmxRedirect(string $url): ResponseInterface
+    {
+        return $this->response->setHeader('HX-Redirect', $url)->setStatusCode(204);
+    }
 }

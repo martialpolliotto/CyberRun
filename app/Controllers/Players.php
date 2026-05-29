@@ -24,9 +24,7 @@ class Players extends BaseController
         return redirect()->to('/players/jail')->with($result['ok'] ? 'message' : 'error', $result['message']);
     }
 
-    /** Stubs pour features a venir : attaque, messages, chat live, espionnage de stats. */
-    public function stubAttack(int $targetPlayerId)  { return $this->stubRedirect($targetPlayerId, 'Combat à venir.'); }
-    public function stubMessage(int $targetPlayerId) { return $this->stubRedirect($targetPlayerId, 'Messagerie à venir.'); }
+    /** Stubs pour features a venir : chat live, espionnage de stats. */
     public function stubChat(int $targetPlayerId)    { return $this->stubRedirect($targetPlayerId, 'Chat à venir.'); }
     public function stubSpy(int $targetPlayerId)     { return $this->stubRedirect($targetPlayerId, 'Espionnage de stats à venir.'); }
 

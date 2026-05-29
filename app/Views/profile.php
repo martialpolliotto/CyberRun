@@ -36,7 +36,7 @@
 
     <!-- Ressources -->
     <div class="row g-3 mb-3">
-        <div class="col-md-4"><?= view('partials/resource_bar', ['label' => 'HP',      'current' => $player['hp_current'],     'max' => $player['hp_max'],     'color' => 'hp']) ?></div>
+        <div class="col-md-4"><?= view('partials/resource_bar', ['label' => 'Life',    'current' => $player['hp_current'],     'max' => $player['hp_max'],     'color' => 'hp']) ?></div>
         <div class="col-md-4"><?= view('partials/resource_bar', ['label' => 'Énergie', 'current' => $player['energy_current'], 'max' => $player['energy_max'], 'color' => 'energy']) ?></div>
         <div class="col-md-4"><?= view('partials/resource_bar', ['label' => 'Nerve',   'current' => $player['nerve_current'],  'max' => $player['nerve_max'],  'color' => 'nerve']) ?></div>
     </div>

@@ -49,4 +49,18 @@ return [
     // ---- Relations (ami / ennemi / cible) ----
     'relation_added'   => 'Tu as ajouté <strong>{target}</strong> à tes {type}s.',
     'relation_removed' => 'Tu as retiré <strong>{target}</strong> de tes {type}s.',
+
+    // ---- Combat ----
+    'combat_won_attacker'  => 'Tu as battu <strong>{target}</strong> au combat.',
+    'combat_lost_attacker' => 'Tu as été battu par <strong>{target}</strong>.',
+    'combat_won_defender'  => 'Tu as repoussé l\'attaque de <strong>{author}</strong>.',
+    'combat_lost_defender' => '<strong>{author}</strong> t\'a battu en défense.',
+    'combat_fled'          => 'Tu as fui face à <strong>{target}</strong>.',
+    'combat_mug'           => 'Tu as dépouillé <strong>{target}</strong> de {amount} ¢.',
+    'combat_hospitalize'   => 'Tu as envoyé <strong>{target}</strong> à la cyberclinique pour {minutes} min.',
+
+    // ---- Jobs ----
+    'job_worked'   => 'Tu as bossé à {job_name} (+{xp} XP, +{credits} ¢).',
+    'job_promoted' => 'Tu as été promu : <strong>{position}</strong> chez {job_name}.',
+    'job_salary'   => 'Tu as touché ton salaire chez {job_name} : +{credits} ¢.',
 ];

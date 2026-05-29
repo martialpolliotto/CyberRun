@@ -260,6 +260,14 @@ class CrimeModel extends Model
             $missionModel->trackEvent($playerId, 'commit_crime', (string) $category['slug']);
             $missionModel->recheckThresholdsForPlayer($playerId);
 
+            // Hook faction : respect gagne si membre.
+            if (! empty($player['faction_id'])) {
+                $respectGain = (int) model(GameSettingModel::class)->get('faction_respect_per_crime', 1);
+                if ($respectGain > 0) {
+                    model(FactionModel::class)->addRespect((int) $player['faction_id'], $playerId, $respectGain);
+                }
+            }
+
             $narrative = $variant['text'] ?? 'Reussite.';
             $suffix    = "\n\n→ +" . $credits . ' credits · +' . $xp . ' XP · +' . $catXp . ' XP ' . $category['name'];
 

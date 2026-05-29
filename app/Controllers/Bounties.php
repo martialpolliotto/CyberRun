@@ -42,17 +42,6 @@ class Bounties extends BaseController
         return redirect()->back()->with($r['ok'] ? 'message' : 'error', $r['message']);
     }
 
-    /** Annule une prime (par son placeur). */
-    public function cancel(int $bountyId)
-    {
-        $me = model(PlayerModel::class)->findByUserId((int) auth()->user()->id);
-        if ($me === null) {
-            return redirect()->to('/')->with('error', 'Fiche player introuvable.');
-        }
-        $r = model(BountyModel::class)->cancel($bountyId, (int) $me['id']);
-        return redirect()->back()->with($r['ok'] ? 'message' : 'error', $r['message']);
-    }
-
     private function resolveUsername(int $playerId): string
     {
         $row = db_connect()->table('players p')

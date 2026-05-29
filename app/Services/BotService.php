@@ -288,6 +288,8 @@ class BotService
 
                 // Stats randomisees pour simuler un passe de jeu (pyramide : peu de gros profils).
                 $seed = $this->generateRandomPlayerStats($persona);
+                // Sex random pour les icones de la sidebar.
+                $seed['sex'] = random_int(0, 1) === 0 ? 'm' : 'f';
 
                 $playerModel->update($player['id'], array_merge([
                     'is_bot'                => 1,

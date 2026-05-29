@@ -142,7 +142,7 @@
 
                 <div class="small text-uppercase text-muted fw-semibold mb-2">Regen instantanée (sans durée)</div>
                 <div class="row g-3 mb-3">
-                    <?php foreach (['effect_hp' => 'HP', 'effect_nrg' => 'NRG', 'effect_nrv' => 'NRV'] as $field => $label): ?>
+                    <?php foreach (['effect_hp' => 'Life', 'effect_nrg' => 'NRG', 'effect_nrv' => 'NRV'] as $field => $label): ?>
                         <div class="col-md-4">
                             <label for="<?= $field ?>" class="form-label small">+<?= esc($label) ?></label>
                             <input id="<?= $field ?>" type="number" name="<?= $field ?>" value="<?= (int) $val($field, 0) ?>" class="form-control font-monospace">
@@ -162,7 +162,7 @@
 
                 <div class="small text-uppercase text-muted fw-semibold mb-2">Bonus temporaire de stat max</div>
                 <div class="row g-3 mb-3">
-                    <?php foreach (['effect_hp_max' => 'HP max', 'effect_nrg_max' => 'NRG max', 'effect_nrv_max' => 'NRV max'] as $field => $label): ?>
+                    <?php foreach (['effect_hp_max' => 'Life max', 'effect_nrg_max' => 'NRG max', 'effect_nrv_max' => 'NRV max'] as $field => $label): ?>
                         <div class="col-md-4">
                             <label for="<?= $field ?>" class="form-label small">+<?= esc($label) ?></label>
                             <input id="<?= $field ?>" type="number" name="<?= $field ?>" value="<?= (int) $val($field, 0) ?>" class="form-control font-monospace">

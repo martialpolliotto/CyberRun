@@ -19,7 +19,7 @@
                  data-seconds-left="<?= (int) $seconds_left ?>">
                 <?= sprintf('%02d:%02d', $mins, $secs) ?>
             </div>
-            <p class="text-muted small mt-2 mb-0">Tu sors automatiquement à zéro. La regen HP / NRG / NRV continue.</p>
+            <p class="text-muted small mt-2 mb-0">Tu sors automatiquement à zéro. La regen Life / NRG / NRV continue.</p>
         </div>
     </div>
 

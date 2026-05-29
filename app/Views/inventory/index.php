@@ -16,34 +16,39 @@
         $effectsByKind[$e['kind']] = $e;
     }
 
-    $boosters = array_values(array_filter($consumables, static fn($c) => $c['consumable_type'] === 'booster'));
-    $drugs    = array_values(array_filter($consumables, static fn($c) => $c['consumable_type'] === 'drug'));
+    $addiction = (int) $player['addiction_level'];
+    $tier      = \App\Models\PlayerModel::addictionTier($addiction);
 
-    // Niveau d'addiction + tier resolu (avec ses penalites actives).
-    $addiction     = (int) $player['addiction_level'];
-    $tier          = \App\Models\PlayerModel::addictionTier($addiction);
-    $addictionTier = (string) $tier['label'];
-
-    // Helper d'affichage des effets d'un item en ligne.
-    $effectsLine = static function (array $c): string {
-        $parts = [];
-        if ((int) $c['effect_hp']  > 0) $parts[] = '+' . (int) $c['effect_hp']  . ' HP';
-        if ((int) $c['effect_nrg'] > 0) $parts[] = '+' . (int) $c['effect_nrg'] . ' NRG';
-        if ((int) $c['effect_nrv'] > 0) $parts[] = '+' . (int) $c['effect_nrv'] . ' NRV';
-        foreach (['force', 'blindage', 'reflexes', 'hack'] as $stat) {
-            if ((int) $c['effect_' . $stat] > 0) $parts[] = '+' . (int) $c['effect_' . $stat] . ' ' . ucfirst($stat);
-        }
-        foreach (['hp_max' => 'HP max', 'nrg_max' => 'NRG max', 'nrv_max' => 'NRV max'] as $col => $label) {
-            if ((int) $c['effect_' . $col] > 0) $parts[] = '+' . (int) $c['effect_' . $col] . ' ' . $label;
-        }
-        return $parts === [] ? '—' : implode(', ', $parts);
+    $categoryLabels = \App\Models\ItemModel::CATEGORIES;
+    $categoryBadge = static function (string $cat) use ($categoryLabels): string {
+        return '<span class="badge bg-light text-dark border">' . esc($categoryLabels[$cat] ?? $cat) . '</span>';
     };
 
     $formatRemaining = static function (int $seconds): string {
-        if ($seconds <= 0) return '';
-        $m = intdiv($seconds, 60);
-        $s = $seconds % 60;
+        if ($seconds <= 0) return 'prêt';
+        $m = intdiv($seconds, 60); $s = $seconds % 60;
         return sprintf('%02d:%02d', $m, $s);
+    };
+
+    $bonusInline = static function (array $r): string {
+        $parts = [];
+        foreach (['force' => 'F', 'blindage' => 'B', 'reflexes' => 'R', 'hack' => 'H'] as $stat => $code) {
+            $v = (int) ($r['bonus_' . $stat] ?? 0);
+            if ($v !== 0) $parts[] = sprintf('%+d %s', $v, $code);
+        }
+        return $parts === [] ? '—' : implode(' ', $parts);
+    };
+
+    $effectsInline = static function (array $r): string {
+        $parts = [];
+        if ((int) $r['effect_hp']  > 0) $parts[] = '+' . (int) $r['effect_hp']  . ' Life';
+        if ((int) $r['effect_nrg'] > 0) $parts[] = '+' . (int) $r['effect_nrg'] . ' NRG';
+        if ((int) $r['effect_nrv'] > 0) $parts[] = '+' . (int) $r['effect_nrv'] . ' NRV';
+        foreach (['force' => 'F', 'blindage' => 'B', 'reflexes' => 'R', 'hack' => 'H'] as $stat => $code) {
+            $v = (int) ($r['effect_' . $stat] ?? 0);
+            if ($v > 0) $parts[] = '+' . $v . ' ' . $code;
+        }
+        return $parts === [] ? '—' : implode(', ', $parts);
     };
 ?>
 
@@ -61,36 +66,22 @@
     <?php endif ?>
 
     <!-- Effets actifs -->
-    <div class="row g-3 mb-4">
+    <div class="row g-3 mb-3">
         <?php foreach (['booster' => 'Booster actif', 'drug' => 'Drogue active'] as $kind => $label): ?>
             <div class="col-md-6">
                 <div class="card h-100">
                     <div class="card-header bg-light small text-uppercase fw-semibold"><?= esc($label) ?></div>
-                    <div class="card-body">
+                    <div class="card-body py-2">
                         <?php $e = $effectsByKind[$kind] ?? null; ?>
                         <?php if ($e === null): ?>
-                            <p class="text-muted fst-italic mb-0">Aucun.</p>
+                            <span class="text-muted fst-italic small">Aucun.</span>
                         <?php else: ?>
                             <?php $remaining = max(0, \CodeIgniter\I18n\Time::parse($e['expires_at'])->getTimestamp() - $now->getTimestamp()); ?>
                             <div class="d-flex justify-content-between align-items-baseline">
                                 <strong><?= esc($e['item_name']) ?></strong>
-                                <span class="font-monospace small"
-                                      data-effect-countdown
-                                      data-seconds-left="<?= (int) $remaining ?>">
+                                <span class="font-monospace small" data-effect-countdown data-seconds-left="<?= (int) $remaining ?>">
                                     <?= $formatRemaining($remaining) ?>
                                 </span>
-                            </div>
-                            <div class="small text-muted mt-1">
-                                <?php
-                                    $bits = [];
-                                    foreach (['effect_force' => 'Force', 'effect_blindage' => 'Blindage', 'effect_reflexes' => 'Réflexes', 'effect_hack' => 'Hack'] as $col => $lbl) {
-                                        if ((int) $e[$col] > 0) $bits[] = '+' . (int) $e[$col] . ' ' . $lbl;
-                                    }
-                                    foreach (['effect_hp_max' => 'HP max', 'effect_nrg_max' => 'NRG max', 'effect_nrv_max' => 'NRV max'] as $col => $lbl) {
-                                        if ((int) $e[$col] > 0) $bits[] = '+' . (int) $e[$col] . ' ' . $lbl;
-                                    }
-                                    echo $bits === [] ? '—' : esc(implode(' · ', $bits));
-                                ?>
                             </div>
                         <?php endif ?>
                     </div>
@@ -99,132 +90,162 @@
         <?php endforeach ?>
     </div>
 
-    <!-- Addiction -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="d-flex justify-content-between align-items-baseline mb-1">
+    <!-- Addiction (condensee si rien d'actif) -->
+    <div class="card mb-3">
+        <div class="card-body py-2">
+            <div class="d-flex justify-content-between align-items-baseline">
                 <span class="small text-uppercase text-muted fw-semibold">Dépendance</span>
-                <span class="font-monospace"><?= $addiction ?> · <?= esc($addictionTier) ?></span>
+                <span class="font-monospace small"><?= $addiction ?> · <?= esc($tier['label']) ?></span>
             </div>
-            <div class="progress" style="height: 8px;">
+            <div class="progress mt-1" style="height: 4px;">
                 <div class="progress-bar bg-dark" style="width: <?= min(100, $addiction) ?>%"></div>
             </div>
-
             <?php if ((int) $tier['stat_malus'] > 0 || (int) $tier['overdose_bonus'] > 0): ?>
-                <ul class="list-unstyled small mt-3 mb-0">
-                    <?php if ((int) $tier['stat_malus'] > 0): ?>
-                        <li>Pénalité : <strong>−<?= (int) $tier['stat_malus'] ?></strong> sur chaque stat effective (Force, Blindage, Réflexes, Hack).</li>
-                    <?php endif ?>
-                    <?php if ((int) $tier['overdose_bonus'] > 0): ?>
-                        <li>Risque d'overdose : <strong>+<?= (int) $tier['overdose_bonus'] ?>%</strong> sur la prochaine drogue.</li>
-                    <?php endif ?>
-                </ul>
-            <?php else: ?>
-                <p class="form-text mt-2 mb-0">
-                    Paliers : 25 = éveillé · 50 = accro (−2 stats / +5% overdose) ·
-                    75 = dépendant (−5 / +10%) · 100 = sevrage (−10 / +20%).
-                    Décay : <?= (int) \App\Models\PlayerModel::ADDICTION_DAILY_DECAY ?> points / jour.
-                </p>
+                <div class="small text-muted mt-1">
+                    <?php if ((int) $tier['stat_malus'] > 0): ?>−<?= (int) $tier['stat_malus'] ?> stats · <?php endif ?>
+                    <?php if ((int) $tier['overdose_bonus'] > 0): ?>+<?= (int) $tier['overdose_bonus'] ?>% overdose<?php endif ?>
+                </div>
             <?php endif ?>
         </div>
     </div>
 
-    <!-- Liste des consommables -->
-    <?php foreach (['Boosters' => $boosters, 'Drogues' => $drugs] as $sectionLabel => $items): ?>
-        <h2 class="small text-uppercase text-muted fw-semibold mt-3 mb-2"><?= esc($sectionLabel) ?> (<?= count($items) ?>)</h2>
-        <?php if (empty($items)): ?>
-            <p class="text-muted fst-italic small">Aucun en stock.</p>
-        <?php else: ?>
-            <div class="table-responsive">
-                <table class="table table-bordered align-middle bg-white small">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Item</th>
-                            <th>Effets</th>
-                            <th>Durée</th>
-                            <th>Cooldown</th>
-                            <th>Risque</th>
-                            <th class="text-end">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($items as $c): ?>
-                            <?php
-                                $kind  = $c['consumable_type'];
-                                $last  = $kind === 'drug' ? $player['last_drug_at'] : $player['last_booster_at'];
-                                $cdRem = $cooldownRemaining($last, (int) $c['cooldown_seconds']);
-                                $hasActive = $effectsByKind[$kind] !== null;
-                                $disabled  = $cdRem > 0 || $hasActive;
-                            ?>
-                            <tr>
-                                <td>
-                                    <strong><?= esc($c['item_name']) ?></strong>
-                                    <?php if (! empty($c['item_description'])): ?>
-                                        <div class="text-muted fst-italic small"><?= esc($c['item_description']) ?></div>
-                                    <?php endif ?>
-                                </td>
-                                <td><?= esc($effectsLine($c)) ?></td>
-                                <td>
-                                    <?= (int) $c['effect_duration_seconds'] > 0
-                                        ? '<span class="font-monospace">' . intdiv((int) $c['effect_duration_seconds'], 60) . ' min</span>'
-                                        : '<span class="text-muted">instant</span>' ?>
-                                </td>
-                                <td>
-                                    <?php if ($cdRem > 0): ?>
-                                        <span class="font-monospace text-muted"
-                                              data-cd-countdown
-                                              data-seconds-left="<?= (int) $cdRem ?>">
-                                            <?= $formatRemaining($cdRem) ?>
-                                        </span>
-                                    <?php else: ?>
-                                        <span class="font-monospace">prêt</span>
-                                    <?php endif ?>
-                                </td>
-                                <td>
+    <!-- Filtres -->
+    <form method="get" action="/inventory" class="mb-3">
+        <div class="row g-2">
+            <div class="col-md-4">
+                <select name="cat" class="form-select" onchange="this.form.submit()">
+                    <?php foreach ($categoryLabels as $k => $label): ?>
+                        <option value="<?= esc($k) ?>" <?= $filter === $k ? 'selected' : '' ?>>
+                            <?= esc($label) ?>
+                        </option>
+                    <?php endforeach ?>
+                </select>
+            </div>
+            <div class="col-md-8 d-flex align-items-center text-muted small">
+                <?= count($rows) ?> objet<?= count($rows) > 1 ? 's' : '' ?> affiché<?= count($rows) > 1 ? 's' : '' ?>
+                <?php if ($filter !== 'all'): ?>
+                    sur <?= (int) $totalCount ?> au total
+                <?php endif ?>
+            </div>
+        </div>
+    </form>
+
+    <!-- Liste expandable -->
+    <?php if (empty($rows)): ?>
+        <p class="text-muted fst-italic small">Aucun objet pour ce filtre.</p>
+    <?php else: ?>
+        <div class="card">
+            <ul class="list-group list-group-flush">
+                <?php foreach ($rows as $r): ?>
+                    <?php
+                        $isEquipped  = (int) $r['equipped'] === 1;
+                        $isConsumable = ! empty($r['consumable_type']);
+                        $kind = $r['consumable_type'] ?? null;
+
+                        $cdRem = 0;
+                        $hasActiveSameKind = false;
+                        if ($isConsumable) {
+                            $last = $kind === 'drug' ? $player['last_drug_at'] : $player['last_booster_at'];
+                            $cdRem = $cooldownRemaining($last, (int) $r['cooldown_seconds']);
+                            $hasActiveSameKind = $effectsByKind[$kind] !== null;
+                        }
+
+                        // Status badge.
+                        if (! empty($r['discontinued'])) {
+                            $statusBadge = '<span class="badge bg-secondary">hors-circuit</span>';
+                        } elseif ($isEquipped) {
+                            $statusBadge = '<span class="badge bg-dark">équipé</span>';
+                        } elseif ($isConsumable) {
+                            $statusBadge = $cdRem > 0
+                                ? '<span class="badge bg-light text-muted">cooldown ' . $formatRemaining($cdRem) . '</span>'
+                                : ($hasActiveSameKind
+                                    ? '<span class="badge bg-light text-muted">effet déjà actif</span>'
+                                    : '<span class="badge bg-light text-dark border">prêt</span>');
+                        } else {
+                            $statusBadge = '<span class="badge bg-light text-dark border">disponible</span>';
+                        }
+                    ?>
+                    <li class="list-group-item p-0" x-data="{ open: false }">
+                        <!-- Ligne compacte cliquable -->
+                        <div class="d-flex align-items-center gap-3 px-3 py-2 user-select-none" style="cursor: pointer;" @click="open = !open">
+                            <span class="text-muted small font-monospace" style="width: 1rem;" x-text="open ? '−' : '+'">+</span>
+                            <strong class="flex-grow-1"><?= esc($r['name']) ?></strong>
+                            <?= $categoryBadge($r['_category']) ?>
+                            <?= $statusBadge ?>
+                        </div>
+                        <!-- Détail dépliable -->
+                        <div x-show="open" x-cloak class="px-3 pb-3 pt-1 border-top bg-light">
+                            <?php if (! empty($r['description'])): ?>
+                                <p class="text-muted fst-italic small mb-2"><?= esc($r['description']) ?></p>
+                            <?php endif ?>
+
+                            <div class="row g-2 small mb-2">
+                                <?php if (! $isConsumable): ?>
+                                    <div class="col-md-4"><span class="text-muted text-uppercase">Slot :</span> <?= esc(\App\Models\ItemModel::SLOTS[$r['slot']] ?? $r['slot']) ?></div>
+                                    <div class="col-md-4"><span class="text-muted text-uppercase">Bonus :</span> <?= $bonusInline($r) ?></div>
+                                <?php else: ?>
+                                    <div class="col-md-4"><span class="text-muted text-uppercase">Type :</span> <?= ucfirst($r['consumable_type']) ?></div>
+                                    <div class="col-md-4"><span class="text-muted text-uppercase">Cooldown :</span> <?= intdiv((int) $r['cooldown_seconds'], 60) ?> min</div>
+                                    <div class="col-md-4"><span class="text-muted text-uppercase">Durée effet :</span> <?= (int) $r['effect_duration_seconds'] > 0 ? intdiv((int) $r['effect_duration_seconds'], 60) . ' min' : 'instant' ?></div>
+                                    <div class="col-md-12"><span class="text-muted text-uppercase">Effets :</span> <?= $effectsInline($r) ?></div>
                                     <?php if ($kind === 'drug'): ?>
-                                        <div class="small">Overdose <?= (int) $c['overdose_chance_pct'] ?>%</div>
-                                        <div class="small text-muted">Addict. +<?= (int) $c['addiction_threshold_increase'] ?></div>
-                                    <?php else: ?>
-                                        <span class="text-muted">—</span>
+                                        <div class="col-md-6"><span class="text-muted text-uppercase">Risque overdose :</span> <?= (int) $r['overdose_chance_pct'] ?>%</div>
+                                        <div class="col-md-6"><span class="text-muted text-uppercase">Addiction +</span> <?= (int) $r['addiction_threshold_increase'] ?></div>
                                     <?php endif ?>
-                                </td>
-                                <td class="text-end">
-                                    <form method="post" action="/inventory/consume/<?= (int) $c['id'] ?>" class="m-0">
+                                <?php endif ?>
+                            </div>
+
+                            <div class="d-flex gap-2 flex-wrap">
+                                <?php if ($isConsumable): ?>
+                                    <form method="post" action="/inventory/consume/<?= (int) $r['pi_id'] ?>" class="m-0">
                                         <?= csrf_field() ?>
-                                        <button type="submit"
-                                                <?= $disabled ? 'disabled' : '' ?>
-                                                class="btn btn-sm btn-dark">
-                                            <?= $hasActive ? 'effet actif' : ($cdRem > 0 ? 'cooldown' : 'Consommer') ?>
+                                        <button type="submit" class="btn btn-sm btn-dark"
+                                                <?= $cdRem > 0 || $hasActiveSameKind || ! empty($r['discontinued']) ? 'disabled' : '' ?>>
+                                            <?php if ($cdRem > 0): ?>
+                                                Cooldown <?= $formatRemaining($cdRem) ?>
+                                            <?php elseif ($hasActiveSameKind): ?>
+                                                Effet déjà actif
+                                            <?php else: ?>
+                                                Consommer
+                                            <?php endif ?>
                                         </button>
                                     </form>
-                                </td>
-                            </tr>
-                        <?php endforeach ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php endif ?>
-    <?php endforeach ?>
+                                <?php elseif ($isEquipped): ?>
+                                    <form method="post" action="/equipment/unequip/<?= esc($r['slot']) ?>" class="m-0">
+                                        <?= csrf_field() ?>
+                                        <button type="submit" class="btn btn-sm btn-outline-dark">Déséquiper</button>
+                                    </form>
+                                <?php else: ?>
+                                    <form method="post" action="/equipment/equip/<?= (int) $r['pi_id'] ?>" class="m-0">
+                                        <?= csrf_field() ?>
+                                        <button type="submit" class="btn btn-sm btn-dark"
+                                                <?= ! empty($r['discontinued']) ? 'disabled' : '' ?>>
+                                            Équiper
+                                        </button>
+                                    </form>
+                                <?php endif ?>
+                                <a href="/equipment" class="btn btn-sm btn-link text-muted text-decoration-none">voir slots</a>
+                            </div>
+                        </div>
+                    </li>
+                <?php endforeach ?>
+            </ul>
+        </div>
+    <?php endif ?>
 
 </div>
 
 <script>
+[x-cloak] { display: none !important; }
 (function () {
-    function fmt(s) {
-        const m = Math.floor(s / 60), r = s % 60;
-        return String(m).padStart(2, '0') + ':' + String(r).padStart(2, '0');
-    }
-    document.querySelectorAll('[data-effect-countdown], [data-cd-countdown]').forEach((el) => {
+    function fmt(s) { const m = Math.floor(s/60), r = s%60; return String(m).padStart(2,'0')+':'+String(r).padStart(2,'0'); }
+    document.querySelectorAll('[data-effect-countdown]').forEach((el) => {
         let left = parseInt(el.dataset.secondsLeft, 10);
-        const tick = () => {
-            if (left <= 0) { window.location.reload(); return; }
-            el.textContent = fmt(left);
-            left--;
-        };
-        tick();
-        setInterval(tick, 1000);
+        const tick = () => { if (left <= 0) { window.location.reload(); return; } el.textContent = fmt(left); left--; };
+        tick(); setInterval(tick, 1000);
     });
 })();
 </script>
+<style>[x-cloak] { display: none !important; }</style>
 
 <?= $this->endSection() ?>

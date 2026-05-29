@@ -41,6 +41,11 @@ $routes->group('', ['filter' => ['session', 'free']], static function ($routes) 
     $routes->get('inventory', 'Inventory::index');
     $routes->post('inventory/consume/(:num)', 'Inventory::consume/$1');
 
+    $routes->get('jobs',                   'Jobs::index');
+    $routes->get('jobs/(:segment)',        'Jobs::show/$1');
+    $routes->post('jobs/(:segment)/apply', 'Jobs::apply/$1');
+    $routes->post('jobs/quit',             'Jobs::quit');
+
     // Actions sur les autres joueurs : faire evader (bust, nerve) ou payer caution (bail, credits).
     $routes->post('bust/(:num)', 'Players::bust/$1');
     $routes->post('bail/(:num)', 'Players::bail/$1');
@@ -49,14 +54,22 @@ $routes->group('', ['filter' => ['session', 'free']], static function ($routes) 
     $routes->post('relations/(:segment)/(:num)', 'Relations::toggle/$1/$2');
     $routes->get('bounties',                     'Bounties::index');
     $routes->post('bounties/place',              'Bounties::place');
-    $routes->post('bounties/(:num)/cancel',      'Bounties::cancel/$1');
     $routes->post('transfer',                    'Transfer::send');
 
-    // Stubs combat / messages / chat / espionnage (boutons visibles, feature future).
-    $routes->post('attack/(:num)',  'Players::stubAttack/$1');
-    $routes->post('message/(:num)', 'Players::stubMessage/$1');
-    $routes->post('chat/(:num)',    'Players::stubChat/$1');
-    $routes->post('spy/(:num)',     'Players::stubSpy/$1');
+    // Messagerie privee 1-to-1.
+    $routes->get('messages',                       'Messages::index');
+    $routes->get('messages/thread/(:num)',         'Messages::thread/$1');
+    $routes->post('messages/send',                 'Messages::send');
+
+    // Stubs : chat live / espionnage (a brancher dans les phases suivantes).
+    $routes->post('chat/(:num)', 'Players::stubChat/$1');
+    $routes->post('spy/(:num)',  'Players::stubSpy/$1');
+
+    // Combat : start (depuis profil), view, turn, post-action (mug/hospitalize/leave).
+    $routes->post('attack/(:num)',                       'Combat::start/$1');
+    $routes->get('combat/(:num)',                        'Combat::view/$1');
+    $routes->post('combat/(:num)/turn',                  'Combat::turn/$1');
+    $routes->post('combat/(:num)/post/(:segment)',       'Combat::postAction/$1/$2');
 
     $routes->get('shops', 'Shops::index');
     $routes->get('shop/(:segment)', 'Shops::show/$1');
@@ -70,6 +83,20 @@ $routes->group('', ['filter' => ['session', 'free']], static function ($routes) 
     $routes->get('crimes', 'Crimes::index');
     $routes->post('crimes/attempt/(:num)', 'Crimes::attempt/$1');
     $routes->get('crimes/(:segment)', 'Crimes::show/$1');
+
+    // Factions.
+    $routes->get('factions',                                     'Factions::index');
+    $routes->get('factions/create',                              'Factions::createForm');
+    $routes->post('factions/create',                             'Factions::create');
+    $routes->get('factions/mine',                                'Factions::mine');
+    $routes->post('factions/mine/leave',                         'Factions::leave');
+    $routes->post('factions/mine/donate',                        'Factions::donate');
+    $routes->post('factions/applications/mine/cancel',           'Factions::cancelMyApplication');
+    $routes->post('factions/applications/(:num)/accept',         'Factions::acceptApplication/$1');
+    $routes->post('factions/applications/(:num)/reject',         'Factions::rejectApplication/$1');
+    $routes->post('factions/members/(:num)/kick',                'Factions::kick/$1');
+    $routes->get('factions/(:num)',                              'Factions::show/$1');
+    $routes->post('factions/(:num)/apply',                       'Factions::apply/$1');
 });
 
 // Zone admin : double filter (session + appartenance au groupe "admin").
@@ -127,4 +154,7 @@ $routes->group('admin', ['filter' => ['session', 'group:admin'], 'namespace' => 
     $routes->post('bots/populate',         'Bots::populate');
     $routes->post('bots/(:num)/destroy',   'Bots::destroy/$1');
     $routes->post('bots/destroy-all',      'Bots::destroyAll');
+
+    $routes->get('player-tools',         'PlayerTools::index');
+    $routes->post('player-tools/adjust', 'PlayerTools::adjust');
 });

@@ -53,10 +53,7 @@
                         <?= csrf_field() ?>
                         <button type="submit" class="btn btn-outline-dark btn-sm" title="Attaquer">⚔ Attaquer</button>
                     </form>
-                    <form method="post" action="/message/<?= $targetId ?>" class="m-0">
-                        <?= csrf_field() ?>
-                        <button type="submit" class="btn btn-outline-dark btn-sm" title="Envoyer un message">✉ Msg</button>
-                    </form>
+                    <a href="/messages/thread/<?= $targetId ?>" class="btn btn-outline-dark btn-sm" title="Envoyer un message">✉ Msg</a>
                     <form method="post" action="/chat/<?= $targetId ?>" class="m-0">
                         <?= csrf_field() ?>
                         <button type="submit" class="btn btn-outline-dark btn-sm" title="Chatter en direct">⌖ Chat</button>
@@ -131,19 +128,11 @@
             </div>
             <ul class="list-group list-group-flush small">
                 <?php foreach ($active_bounties as $b): ?>
-                    <li class="list-group-item d-flex justify-content-between align-items-start">
-                        <div>
-                            <strong>¢<?= number_format((int) $b['amount']) ?></strong>
-                            par <a href="/u/<?= esc($b['placer_username']) ?>" class="text-dark text-decoration-none fw-semibold"><?= esc($b['placer_username']) ?></a>
-                            <?php if (! empty($b['message'])): ?>
-                                <div class="text-muted fst-italic mt-1">« <?= esc($b['message']) ?> »</div>
-                            <?php endif ?>
-                        </div>
-                        <?php if ((int) $b['placer_player_id'] === $myId): ?>
-                            <form method="post" action="/bounties/<?= (int) $b['id'] ?>/cancel" class="m-0" onsubmit="return confirm('Annuler la prime ? Tes <?= number_format((int) $b['amount']) ?> ¢ te seront remboursés.');">
-                                <?= csrf_field() ?>
-                                <button type="submit" class="btn btn-sm btn-outline-dark">Annuler</button>
-                            </form>
+                    <li class="list-group-item">
+                        <strong>¢<?= number_format((int) $b['amount']) ?></strong>
+                        par <a href="/u/<?= esc($b['placer_username']) ?>" class="text-dark text-decoration-none fw-semibold"><?= esc($b['placer_username']) ?></a>
+                        <?php if (! empty($b['message'])): ?>
+                            <div class="text-muted fst-italic mt-1">« <?= esc($b['message']) ?> »</div>
                         <?php endif ?>
                     </li>
                 <?php endforeach ?>
@@ -203,7 +192,7 @@
     <div class="modal fade" id="modal-bounty" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form method="post" action="/bounties/place">
+                <form method="post" action="/bounties/place" onsubmit="return confirm('Confirmer la prime ? Une fois placée, elle ne peut PAS être annulée ni remboursée.');">
                     <?= csrf_field() ?>
                     <input type="hidden" name="target_player_id" value="<?= $targetId ?>">
                     <div class="modal-header">
@@ -211,6 +200,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                     </div>
                     <div class="modal-body">
+                        <?= view('partials/alert', ['variant' => 'warning', 'message' => 'Une fois placée, la prime est définitive. Aucun remboursement possible.']) ?>
                         <div class="mb-3">
                             <label class="form-label small">Montant de la prime (¢)</label>
                             <input type="number" name="amount" min="1" max="<?= (int) $me['credits'] ?>" required class="form-control font-monospace">

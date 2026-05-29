@@ -75,7 +75,7 @@ class Crimes extends BaseController
         ]);
     }
 
-    /** Action : tente un crime. */
+    /** Action : tente un crime. Supporte HTMX (renvoie un partial) ou requete classique (redirect). */
     public function attempt(int $crimeId)
     {
         $player = model(PlayerModel::class)->findByUserId((int) auth()->user()->id);
@@ -90,15 +90,49 @@ class Crimes extends BaseController
         $category = model(CrimeCategoryModel::class)->find((int) $crime['category_id']);
 
         $result = model(CrimeModel::class)->attempt((int) $player['id'], $crimeId);
+        $isCritical = ($result['outcome'] ?? null) === 'critical';
+        $variantFlash = $result['ok']
+            ? (($result['outcome'] ?? '') === 'success' ? 'success' : 'danger')
+            : 'danger';
 
-        $variant = $result['ok'] ? ($result['outcome'] === 'success' ? 'message' : 'error') : 'error';
-        // Si critical -> redirect direct sur jail ou hospital.
-        if (($result['outcome'] ?? null) === 'critical') {
+        // ---- Reponse HTMX : re-render le partial _list.php avec les valeurs a jour ----
+        if ($this->isHtmx()) {
+            // Critique : on force un full navigate vers /jail ou /profile (etat global change).
+            if ($isCritical) {
+                $dest = ($result['critical_destination'] === 'hospital') ? '/profile' : '/jail';
+                return $this->htmxRedirect($dest);
+            }
+
+            // Recharge le player + crimes mis a jour (les compteurs et %reussite ont pu bouger).
+            $player    = model(PlayerModel::class)->find((int) $player['id']);
+            $progress  = model(\App\Models\PlayerCrimeProgressModel::class)
+                ->getOrCreate((int) $player['id'], (int) $category['id']);
+            $stats     = model(PlayerModel::class)->getEffectiveStats((int) $player['id']);
+            $crimeModel = model(CrimeModel::class);
+            $crimes    = $crimeModel->listForCategory((int) $category['id']);
+            foreach ($crimes as &$c) {
+                $c['_unlocked']      = $crimeModel->isUnlockedFor($c, (int) $progress['xp']);
+                $c['_success_pct']   = $crimeModel->estimateSuccessPct($c, $category, $player, (int) $progress['xp'], $stats['total']);
+                $c['_time_bonus_on'] = $crimeModel->isTimeBonusActive($c);
+            }
+            unset($c);
+
+            return view('crimes/_list', [
+                'player'                 => $player,
+                'crimes'                 => $crimes,
+                'flash_variant'          => $variantFlash,
+                'flash_message'          => $result['message'],
+                'last_attempted_id'      => $crimeId,
+                'last_attempted_outcome' => $result['outcome'] ?? null,  // success | fail | critical (gere par redirect)
+            ]);
+        }
+
+        // ---- Fallback non-HTMX : redirect classique ----
+        if ($isCritical) {
             $dest = ($result['critical_destination'] === 'hospital') ? '/profile' : '/jail';
             return redirect()->to($dest)->with('error', $result['message']);
         }
-
         return redirect()->to('/crimes/' . ($category['slug'] ?? ''))
-            ->with($variant, $result['message']);
+            ->with($variantFlash === 'success' ? 'message' : 'error', $result['message']);
     }
 }

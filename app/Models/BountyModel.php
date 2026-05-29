@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use CodeIgniter\Database\RawSql;
-use CodeIgniter\I18n\Time;
 use CodeIgniter\Model;
 
 class BountyModel extends Model
@@ -72,40 +71,6 @@ class BountyModel extends Model
         $db->transComplete();
 
         return ['ok' => true, 'message' => 'Prime de ' . $amount . ' credits placee.', 'bounty_id' => (int) $bountyId];
-    }
-
-    /**
-     * Annule la prime, rembourse le placer.
-     *
-     * @return array{ok: bool, message: string}
-     */
-    public function cancel(int $bountyId, int $placerId): array
-    {
-        $bounty = $this->find($bountyId);
-        if ($bounty === null || (int) $bounty['placer_player_id'] !== $placerId) {
-            return ['ok' => false, 'message' => 'Prime introuvable ou pas la tienne.'];
-        }
-        if ($bounty['status'] !== 'active') {
-            return ['ok' => false, 'message' => 'Cette prime n\'est plus active.'];
-        }
-
-        $playerModel = model(PlayerModel::class);
-        $db = db_connect();
-        $db->transStart();
-
-        $playerModel->builder()
-            ->where('id', $placerId)
-            ->update([
-                'credits'    => new RawSql('credits + ' . (int) $bounty['amount']),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ]);
-        $this->update($bountyId, [
-            'status'     => 'cancelled',
-            'claimed_at' => Time::now()->toDateTimeString(),
-        ]);
-
-        $db->transComplete();
-        return ['ok' => true, 'message' => 'Prime annulee, ' . (int) $bounty['amount'] . ' credits rembourses.'];
     }
 
     /**
