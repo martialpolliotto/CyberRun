@@ -117,10 +117,12 @@ class Players extends BaseController
         }
 
         return view('players/show', [
-            'profile'         => $player,
-            'me'              => $me,
-            'combat_stats'    => model(\App\Models\PlayerCombatStatsModel::class)->getOrCreate((int) $player['id']),
-            'active_bounties' => model(\App\Models\BountyModel::class)->activeOnTarget((int) $player['id']),
+            'profile'           => $player,
+            'me'                => $me,
+            'combat_stats'      => model(\App\Models\PlayerCombatStatsModel::class)->getOrCreate((int) $player['id']),
+            'active_bounties'   => model(\App\Models\BountyModel::class)->activeOnTarget((int) $player['id']),
+            'bazaar_listings'   => model(\App\Models\BazaarListingModel::class)->listForSeller((int) $player['id']),
+            'bazaar_fee_pct'    => (int) model(\App\Models\GameSettingModel::class)->get('bazaar_fee_pct', 5),
         ]);
     }
 }

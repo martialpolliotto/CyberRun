@@ -140,6 +140,56 @@
         </div>
     <?php endif ?>
 
+    <!-- Bazaar du joueur (visible publiquement) -->
+    <?php if (! empty($bazaar_listings)): ?>
+        <div class="card mb-3">
+            <div class="card-header bg-light small text-uppercase fw-semibold d-flex justify-content-between">
+                <span>Bazaar de <?= esc($profile['username']) ?></span>
+                <span class="text-muted"><?= count($bazaar_listings) ?> listing<?= count($bazaar_listings) > 1 ? 's' : '' ?></span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-borderless mb-0 align-middle small">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Item</th>
+                            <th class="text-end">Stock</th>
+                            <th class="text-end">Prix unitaire</th>
+                            <?php if (! $isSelf && $me !== null): ?>
+                                <th></th>
+                            <?php endif ?>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($bazaar_listings as $l): ?>
+                            <tr>
+                                <td>
+                                    <strong><?= esc($l['item_name']) ?></strong>
+                                    <?php if (! empty($l['item_consumable_type'])): ?>
+                                        <span class="badge bg-light text-dark border ms-1"><?= esc($l['item_consumable_type']) ?></span>
+                                    <?php endif ?>
+                                </td>
+                                <td class="text-end font-monospace"><?= (int) $l['quantity'] ?></td>
+                                <td class="text-end font-monospace"><?= number_format((int) $l['unit_price']) ?>¢</td>
+                                <?php if (! $isSelf && $me !== null): ?>
+                                    <td class="text-end">
+                                        <form method="post" action="/bazaar/listings/<?= (int) $l['id'] ?>/buy" class="d-flex gap-1 justify-content-end m-0"
+                                              onsubmit="return confirm('Confirmer l\'achat ?');">
+                                            <?= csrf_field() ?>
+                                            <input type="hidden" name="return_to" value="/u/<?= esc($profile['username']) ?>">
+                                            <input type="number" name="quantity" min="1" max="<?= (int) $l['quantity'] ?>" value="1"
+                                                   class="form-control form-control-sm font-monospace" style="width: 4.5rem;">
+                                            <button type="submit" class="btn btn-dark btn-sm">Acheter</button>
+                                        </form>
+                                    </td>
+                                <?php endif ?>
+                            </tr>
+                        <?php endforeach ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    <?php endif ?>
+
     <!-- Section bust/bail si en prison (déjà là avant la refonte) -->
     <?php if ($profile['_status'] === 'jail' && ! $isSelf && $me !== null): ?>
         <div class="card mb-3">

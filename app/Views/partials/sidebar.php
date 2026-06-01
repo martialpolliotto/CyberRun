@@ -50,6 +50,7 @@ $navItems = [
     ['Faction',     $factionsHref,   'bi-shield-fill',     null],
     ['Équipement',  '/equipment',    'bi-shield',          null],
     ['Inventaire',  '/inventory',    'bi-bag',             null],
+    ['Bazaar',      '/bazaar/mine',  'bi-cash-coin',       null],
     ['Joueurs',     '/players',      'bi-people',          null],
     ['Classements', '/leaderboards', 'bi-trophy',          null],
 ];

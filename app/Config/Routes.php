@@ -84,6 +84,12 @@ $routes->group('', ['filter' => ['session', 'free']], static function ($routes) 
     $routes->post('crimes/attempt/(:num)', 'Crimes::attempt/$1');
     $routes->get('crimes/(:segment)', 'Crimes::show/$1');
 
+    // Bazaar joueur-a-joueur.
+    $routes->get('bazaar/mine',                       'Bazaar::mine');
+    $routes->post('bazaar/list',                      'Bazaar::listFromInventory');
+    $routes->post('bazaar/listings/(:num)/unlist',    'Bazaar::unlist/$1');
+    $routes->post('bazaar/listings/(:num)/buy',       'Bazaar::buy/$1');
+
     // Factions.
     $routes->get('factions',                                     'Factions::index');
     $routes->get('factions/create',                              'Factions::createForm');
