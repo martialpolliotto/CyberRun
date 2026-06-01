@@ -98,8 +98,11 @@ class Crimes extends BaseController
         // ---- Reponse HTMX : re-render le partial _list.php avec les valeurs a jour ----
         if ($this->isHtmx()) {
             // Critique : on force un full navigate vers /jail ou /profile (etat global change).
+            // On pose le message en flashdata pour que la page destination l'affiche
+            // (sinon le joueur arrive en prison sans explication).
             if ($isCritical) {
                 $dest = ($result['critical_destination'] === 'hospital') ? '/profile' : '/jail';
+                session()->setFlashdata('error', $result['message']);
                 return $this->htmxRedirect($dest);
             }
 

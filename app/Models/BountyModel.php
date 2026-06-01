@@ -74,6 +74,54 @@ class BountyModel extends Model
     }
 
     /**
+     * Annule une bounty par son placeur. Refund atomique des credits.
+     * Le UPDATE conditionne sur placer + status='active' verrouille la transition
+     * et empeche un double refund / un cancel concurrent avec un claim.
+     *
+     * @return array{ok: bool, message: string, refunded?: int}
+     */
+    public function cancel(int $bountyId, int $placerId): array
+    {
+        $bounty = $this->find($bountyId);
+        if ($bounty === null || (int) $bounty['placer_player_id'] !== $placerId) {
+            return ['ok' => false, 'message' => 'Prime introuvable ou pas la tienne.'];
+        }
+        if ($bounty['status'] !== 'active') {
+            return ['ok' => false, 'message' => 'Cette prime n\'est plus active.'];
+        }
+
+        $amount = (int) $bounty['amount'];
+        $db     = db_connect();
+        $db->transStart();
+
+        // Transition active -> cancelled atomique : si quelqu'un a claim entre-temps,
+        // affectedRows = 0 et on rollback sans refund.
+        $this->builder()
+            ->where('id', $bountyId)
+            ->where('placer_player_id', $placerId)
+            ->where('status', 'active')
+            ->update([
+                'status'     => 'cancelled',
+                'claimed_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+        if ($db->affectedRows() === 0) {
+            $db->transRollback();
+            return ['ok' => false, 'message' => 'Prime deja claim ou annulee entre-temps.'];
+        }
+
+        model(PlayerModel::class)->builder()
+            ->where('id', $placerId)
+            ->update([
+                'credits'    => new RawSql('credits + ' . $amount),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+
+        $db->transComplete();
+        return ['ok' => true, 'message' => 'Prime annulee, ' . number_format($amount) . ' credits rembourses.', 'refunded' => $amount];
+    }
+
+    /**
      * Bounties actives sur une cible.
      *
      * @return array<int, array<string, mixed>>

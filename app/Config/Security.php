@@ -70,8 +70,12 @@ class Security extends BaseConfig
      * --------------------------------------------------------------------------
      *
      * Regenerate CSRF Token on every submission.
+     *
+     * NOTE: false pour permettre les soumissions HTMX repetees sans rotation.
+     * Tradeoff : un peu moins fort que regenerate=true, mais bloque toujours
+     * les classic CSRF cross-site.
      */
-    public bool $regenerate = true;
+    public bool $regenerate = false;
 
     /**
      * --------------------------------------------------------------------------

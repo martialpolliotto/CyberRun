@@ -115,12 +115,4 @@ class Chat extends BaseController
         return array_map(static fn($r) => (int) $r['target_player_id'], $rows);
     }
 
-    private function requireMe(): array
-    {
-        $me = model(PlayerModel::class)->findByUserId((int) auth()->user()->id);
-        if ($me === null) {
-            throw new \RuntimeException('Fiche player introuvable.');
-        }
-        return $me;
-    }
 }

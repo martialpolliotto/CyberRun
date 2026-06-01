@@ -58,4 +58,59 @@ abstract class BaseController extends Controller
     {
         return $this->response->setHeader('HX-Redirect', $url)->setStatusCode(204);
     }
+
+    /**
+     * Memo de la fiche player pour le user connecte. Permet d'eviter N findByUserId
+     * dans la meme requete (ex: sidebar + widget + controller faisaient 3 lookups).
+     * @var array<string,mixed>|null|false  false = not loaded yet
+     */
+    private $cachedMe = false;
+
+    /**
+     * Retourne la fiche player du user authentifie, ou null si pas connecte / pas de fiche.
+     * Memoize pour la duree de la requete.
+     *
+     * @return array<string,mixed>|null
+     */
+    protected function me(): ?array
+    {
+        if ($this->cachedMe !== false) {
+            return $this->cachedMe;
+        }
+        if (! function_exists('auth') || ! auth()->loggedIn()) {
+            return $this->cachedMe = null;
+        }
+        return $this->cachedMe = model(\App\Models\PlayerModel::class)
+            ->findByUserId((int) auth()->user()->id);
+    }
+
+    /**
+     * Comme me() mais throw si la fiche n'existe pas. Pour les controllers
+     * qui n'ont pas de sens sans player. L'exception remonte en 500, ce qui est
+     * le bon signal : avoir un user logge sans fiche player est un bug d'init.
+     *
+     * @return array<string,mixed>
+     */
+    protected function requireMe(): array
+    {
+        $me = $this->me();
+        if ($me === null) {
+            throw new \RuntimeException('Fiche player introuvable.');
+        }
+        return $me;
+    }
+
+    /**
+     * Resout le username (via users.username) d'un player_id donne. Fallback 'inconnu'.
+     * Centralise pour eviter 5 copies du meme join dans les controllers/services.
+     */
+    protected function resolveUsername(int $playerId): string
+    {
+        $row = db_connect()->table('players p')
+            ->select('users.username')
+            ->join('users', 'users.id = p.user_id', 'inner')
+            ->where('p.id', $playerId)
+            ->get()->getRowArray();
+        return (string) ($row['username'] ?? 'inconnu');
+    }
 }

@@ -55,6 +55,7 @@ $routes->group('', ['filter' => ['session', 'free']], static function ($routes) 
     $routes->post('relations/(:segment)/(:num)', 'Relations::toggle/$1/$2');
     $routes->get('bounties',                     'Bounties::index');
     $routes->post('bounties/place',              'Bounties::place');
+    $routes->post('bounties/(:num)/cancel',      'Bounties::cancel/$1');
     $routes->post('transfer',                    'Transfer::send');
 
     // Messagerie privee 1-to-1.

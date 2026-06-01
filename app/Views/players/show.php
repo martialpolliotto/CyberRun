@@ -124,11 +124,20 @@
             </div>
             <ul class="list-group list-group-flush small">
                 <?php foreach ($active_bounties as $b): ?>
-                    <li class="list-group-item">
-                        <strong>¢<?= number_format((int) $b['amount']) ?></strong>
-                        par <a href="/u/<?= esc($b['placer_username']) ?>" class="text-dark text-decoration-none fw-semibold"><?= esc($b['placer_username']) ?></a>
-                        <?php if (! empty($b['message'])): ?>
-                            <div class="text-muted fst-italic mt-1">« <?= esc($b['message']) ?> »</div>
+                    <li class="list-group-item d-flex justify-content-between align-items-start gap-2">
+                        <div class="flex-grow-1">
+                            <strong>¢<?= number_format((int) $b['amount']) ?></strong>
+                            par <a href="/u/<?= esc($b['placer_username']) ?>" class="text-dark text-decoration-none fw-semibold"><?= esc($b['placer_username']) ?></a>
+                            <?php if (! empty($b['message'])): ?>
+                                <div class="text-muted fst-italic mt-1">« <?= esc($b['message']) ?> »</div>
+                            <?php endif ?>
+                        </div>
+                        <?php if ($me !== null && (int) $b['placer_player_id'] === (int) $me['id']): ?>
+                            <form method="post" action="/bounties/<?= (int) $b['id'] ?>/cancel" class="m-0"
+                                  onsubmit="return confirm('Annuler ta prime et récupérer les <?= number_format((int) $b['amount']) ?> credits ?');">
+                                <?= csrf_field() ?>
+                                <button type="submit" class="btn btn-sm btn-outline-dark" title="Annuler ta prime + refund">×</button>
+                            </form>
                         <?php endif ?>
                     </li>
                 <?php endforeach ?>

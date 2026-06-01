@@ -252,21 +252,22 @@ class CrimeModel extends Model
                 ]);
             }
 
-            $db->transComplete();
-
-            // Hooks missions : commit_crime / categorie / slug du crime
+            // Hooks missions + faction respect AVANT transComplete : tous les writes
+            // sont commit ou roll back ensemble (atomicite). Avant ce changement, un
+            // throw dans trackEvent laissait credits/xp donnes mais missions perdues.
             $missionModel = model(MissionModel::class);
             $missionModel->trackEvent($playerId, 'commit_crime', (string) $crime['slug']);
             $missionModel->trackEvent($playerId, 'commit_crime', (string) $category['slug']);
             $missionModel->recheckThresholdsForPlayer($playerId);
 
-            // Hook faction : respect gagne si membre.
             if (! empty($player['faction_id'])) {
                 $respectGain = (int) model(GameSettingModel::class)->get('faction_respect_per_crime', 1);
                 if ($respectGain > 0) {
                     model(FactionModel::class)->addRespect((int) $player['faction_id'], $playerId, $respectGain);
                 }
             }
+
+            $db->transComplete();
 
             $narrative = $variant['text'] ?? 'Reussite.';
             $suffix    = "\n\n→ +" . $credits . ' credits · +' . $xp . ' XP · +' . $catXp . ' XP ' . $category['name'];

@@ -57,6 +57,38 @@ class ChatMessageModel extends Model
     }
 
     /**
+     * Comptages anti-flood en 1 requete : retourne {hard, burst, soft} pour les 3 fenetres.
+     * Utilise SUM(IF(...)) au lieu de 3 COUNT separes (3x moins de round-trips DB).
+     *
+     * @return array{hard: int, burst: int, soft: int}
+     */
+    public function recentSendCountsMulti(int $playerId, int $hardSecs, int $burstSecs, int $softSecs): array
+    {
+        $max = max($hardSecs, $burstSecs, $softSecs);
+        $now = time();
+        $sql = 'SELECT
+                    SUM(IF(created_at > ?, 1, 0)) AS hard,
+                    SUM(IF(created_at > ?, 1, 0)) AS burst,
+                    SUM(IF(created_at > ?, 1, 0)) AS soft
+                FROM chat_messages
+                WHERE sender_player_id = ?
+                  AND created_at > ?';
+        $row = db_connect()->query($sql, [
+            date('Y-m-d H:i:s', $now - $hardSecs),
+            date('Y-m-d H:i:s', $now - $burstSecs),
+            date('Y-m-d H:i:s', $now - $softSecs),
+            $playerId,
+            date('Y-m-d H:i:s', $now - $max),
+        ])->getRowArray();
+
+        return [
+            'hard'  => (int) ($row['hard']  ?? 0),
+            'burst' => (int) ($row['burst'] ?? 0),
+            'soft'  => (int) ($row['soft']  ?? 0),
+        ];
+    }
+
+    /**
      * Prune les messages au-dela des $keep plus recents pour un channel donne.
      * Retourne le nombre de lignes supprimees.
      */

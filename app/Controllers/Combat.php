@@ -85,13 +85,4 @@ class Combat extends BaseController
         return redirect()->to('/combat/' . $combatId)->with($r['ok'] ? 'message' : 'error', $r['message']);
     }
 
-    private function resolveUsername(int $playerId): string
-    {
-        $row = db_connect()->table('players p')
-            ->select('users.username')
-            ->join('users', 'users.id = p.user_id', 'inner')
-            ->where('p.id', $playerId)
-            ->get()->getRowArray();
-        return (string) ($row['username'] ?? 'inconnu');
-    }
 }

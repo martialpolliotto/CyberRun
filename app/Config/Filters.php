@@ -75,7 +75,14 @@ class Filters extends BaseFilters
     public array $globals = [
         'before' => [
             // 'honeypot',
-            // 'csrf',
+            'csrf' => [
+                // Endpoints HTMX repetitifs : on les exempte car l'input csrf_field()
+                // d'un form persistant ne se regenere pas a chaque envoi cote client.
+                // Compense : route a effets de bord limites + session filter applique.
+                'except' => [
+                    'chat/send',
+                ],
+            ],
             // 'invalidchars',
         ],
         'after' => [

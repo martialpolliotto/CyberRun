@@ -26,7 +26,7 @@ class Factions extends BaseController
 {
     public function index()
     {
-        $me = $this->resolveMe();
+        $me = $this->me();
         return view('factions/index', [
             'me'                => $me,
             'factions'          => model(FactionModel::class)->listAll(100),
@@ -38,7 +38,7 @@ class Factions extends BaseController
 
     public function show(int $factionId)
     {
-        $me      = $this->resolveMe();
+        $me      = $this->me();
         $faction = model(FactionModel::class)->findWithLeader($factionId);
         if ($faction === null) {
             return redirect()->to('/factions')->with('error', 'Faction introuvable.');
@@ -238,22 +238,4 @@ class Factions extends BaseController
         return redirect()->to('/factions/mine')->with('message', 'Membre exclu.');
     }
 
-    /** @return array<string,mixed>|null */
-    private function resolveMe(): ?array
-    {
-        if (! function_exists('auth') || ! auth()->loggedIn()) {
-            return null;
-        }
-        return model(PlayerModel::class)->findByUserId((int) auth()->user()->id);
-    }
-
-    /** Comme resolveMe mais redirige si pas de fiche. */
-    private function requireMe(): array
-    {
-        $me = $this->resolveMe();
-        if ($me === null) {
-            throw new \RuntimeException('Fiche player introuvable.');
-        }
-        return $me;
-    }
 }

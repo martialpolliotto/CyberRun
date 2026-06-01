@@ -42,13 +42,19 @@ class Bounties extends BaseController
         return redirect()->back()->with($r['ok'] ? 'message' : 'error', $r['message']);
     }
 
-    private function resolveUsername(int $playerId): string
+    /** Annule une prime placee par le joueur courant (refund credits). */
+    public function cancel(int $bountyId)
     {
-        $row = db_connect()->table('players p')
-            ->select('users.username')
-            ->join('users', 'users.id = p.user_id', 'inner')
-            ->where('p.id', $playerId)
-            ->get()->getRowArray();
-        return (string) ($row['username'] ?? 'inconnu');
+        $me = model(PlayerModel::class)->findByUserId((int) auth()->user()->id);
+        if ($me === null) {
+            return redirect()->to('/')->with('error', 'Fiche player introuvable.');
+        }
+        $r = model(BountyModel::class)->cancel($bountyId, (int) $me['id']);
+        if ($r['ok']) {
+            ActivityLogger::log((int) $me['id'], 'eco', 'Log.bounty_cancelled',
+                ['amount' => $r['refunded'] ?? 0], null, $bountyId);
+        }
+        return redirect()->back()->with($r['ok'] ? 'message' : 'error', $r['message']);
     }
+
 }

@@ -90,12 +90,4 @@ class Bazaar extends BaseController
         return $candidate;
     }
 
-    private function requireMe(): array
-    {
-        $me = model(PlayerModel::class)->findByUserId((int) auth()->user()->id);
-        if ($me === null) {
-            throw new \RuntimeException('Fiche player introuvable.');
-        }
-        return $me;
-    }
 }

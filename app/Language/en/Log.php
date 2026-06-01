@@ -43,8 +43,9 @@ return [
     'transfer_received' => '<strong>{author}</strong> sent you {amount} ¢.',
 
     // ---- Bounty ----
-    'bounty_placed'  => 'You placed a {amount} ¢ bounty on <strong>{target}</strong>.',
-    'bounty_claimed' => 'You collected a {amount} ¢ bounty on <strong>{target}</strong>.',
+    'bounty_placed'    => 'You placed a {amount} ¢ bounty on <strong>{target}</strong>.',
+    'bounty_claimed'   => 'You collected a {amount} ¢ bounty on <strong>{target}</strong>.',
+    'bounty_cancelled' => 'You cancelled a {amount} ¢ bounty (credits refunded).',
 
     // ---- Relations (friend / enemy / target) ----
     'relation_added'   => 'You added <strong>{target}</strong> to your {type}s.',

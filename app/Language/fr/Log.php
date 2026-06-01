@@ -43,8 +43,9 @@ return [
     'transfer_received' => '<strong>{author}</strong> t\'a envoyé {amount} ¢.',
 
     // ---- Bounty ----
-    'bounty_placed'  => 'Tu as placé une prime de {amount} ¢ sur <strong>{target}</strong>.',
-    'bounty_claimed' => 'Tu as encaissé une prime de {amount} ¢ sur la tête de <strong>{target}</strong>.',
+    'bounty_placed'    => 'Tu as placé une prime de {amount} ¢ sur <strong>{target}</strong>.',
+    'bounty_claimed'   => 'Tu as encaissé une prime de {amount} ¢ sur la tête de <strong>{target}</strong>.',
+    'bounty_cancelled' => 'Tu as annulé une prime de {amount} ¢ (crédits remboursés).',
 
     // ---- Relations (ami / ennemi / cible) ----
     'relation_added'   => 'Tu as ajouté <strong>{target}</strong> à tes {type}s.',

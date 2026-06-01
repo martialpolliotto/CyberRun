@@ -68,22 +68,29 @@ class ChatService
         // Lock per-player : serialize les sends concurrents pour ce joueur jusqu'au commit.
         $db->query('SELECT id FROM players WHERE id = ? FOR UPDATE', [$playerId]);
 
-        $hard = (int) $settings->get('chat_rate_hard_seconds', 2);
-        if ($hard > 0 && $msgModel->recentSendCount($playerId, $hard) > 0) {
+        $hard       = (int) $settings->get('chat_rate_hard_seconds', 2);
+        $burstCount = (int) $settings->get('chat_rate_burst_count', 5);
+        $burstSecs  = (int) $settings->get('chat_rate_burst_seconds', 10);
+        $softCount  = (int) $settings->get('chat_rate_soft_count', 10);
+        $softSecs   = (int) $settings->get('chat_rate_soft_seconds', 60);
+
+        // 1 seule requete pour les 3 fenetres glissantes (au lieu de 3 COUNT separes).
+        $counts = $msgModel->recentSendCountsMulti(
+            $playerId,
+            max(1, $hard),
+            max(1, $burstSecs),
+            max(1, $softSecs),
+        );
+
+        if ($hard > 0 && $counts['hard'] > 0) {
             $db->transRollback();
             return ['ok' => false, 'message' => 'Tu envoies trop vite. Attends ' . $hard . 's.'];
         }
-
-        $burstCount = (int) $settings->get('chat_rate_burst_count', 5);
-        $burstSecs  = (int) $settings->get('chat_rate_burst_seconds', 10);
-        if ($burstCount > 0 && $burstSecs > 0 && $msgModel->recentSendCount($playerId, $burstSecs) >= $burstCount) {
+        if ($burstCount > 0 && $burstSecs > 0 && $counts['burst'] >= $burstCount) {
             $db->transRollback();
             return ['ok' => false, 'message' => 'Trop de messages en rafale. Attends un peu.'];
         }
-
-        $softCount = (int) $settings->get('chat_rate_soft_count', 10);
-        $softSecs  = (int) $settings->get('chat_rate_soft_seconds', 60);
-        if ($softCount > 0 && $softSecs > 0 && $msgModel->recentSendCount($playerId, $softSecs) >= $softCount) {
+        if ($softCount > 0 && $softSecs > 0 && $counts['soft'] >= $softCount) {
             $db->transRollback();
             return ['ok' => false, 'message' => 'Limite de ' . $softCount . ' messages/min atteinte.'];
         }

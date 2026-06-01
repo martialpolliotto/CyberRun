@@ -12,11 +12,9 @@
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
     <style>
         [x-cloak] { display: none !important; }
-        @media (max-width: 991.98px) {
-            .cr-sidebar-desktop { display: none; }
-        }
+        /* Le burger ne s'affiche que sur mobile (la sidebar est inline sur desktop via offcanvas-lg). */
         @media (min-width: 992px) {
-            .cr-sidebar-offcanvas, .cr-burger { display: none !important; }
+            .cr-burger { display: none !important; }
         }
         /* Bouton HTMX : spinner pendant la requete (htmx-request ajoutee auto), texte sinon. */
         .cr-htmx-btn .cr-btn-spinner { display: none; }
@@ -65,19 +63,19 @@
 <div class="mx-auto d-flex" style="max-width: 1380px;">
 
     <?php if ($isLogged): ?>
-        <!-- Sidebar permanente sur desktop -->
-        <div class="cr-sidebar-desktop">
-            <?= view('partials/sidebar') ?>
-        </div>
-
-        <!-- Offcanvas mobile : meme contenu sidebar dans un drawer -->
-        <div class="offcanvas offcanvas-start cr-sidebar-offcanvas" tabindex="-1" id="sidebar-offcanvas">
-            <div class="offcanvas-header">
-                <h5 class="offcanvas-title small text-uppercase fw-semibold text-muted mb-0">Information</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fermer"></button>
+        <?php
+            // Rend la sidebar UNE SEULE fois (avant: rendue 2x = 2 findByUserId + 2 unreadCount par page).
+            // Bootstrap offcanvas-lg permet d'afficher le meme noeud comme sidebar fixe desktop
+            // ET comme drawer offcanvas mobile via une seule directive responsive.
+            $sidebarHtml = view('partials/sidebar');
+        ?>
+        <div class="offcanvas-lg offcanvas-start cr-sidebar-desktop" tabindex="-1" id="sidebar-offcanvas" aria-labelledby="sidebar-offcanvas-title">
+            <div class="offcanvas-header d-lg-none">
+                <h5 class="offcanvas-title small text-uppercase fw-semibold text-muted mb-0" id="sidebar-offcanvas-title">Information</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar-offcanvas" aria-label="Fermer"></button>
             </div>
             <div class="offcanvas-body p-0">
-                <?= view('partials/sidebar') ?>
+                <?= $sidebarHtml ?>
             </div>
         </div>
     <?php endif ?>

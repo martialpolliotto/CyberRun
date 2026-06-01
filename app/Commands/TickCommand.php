@@ -51,38 +51,48 @@ class TickCommand extends BaseCommand
         $xpGain     = (int) $settings->get('job_daily_xp_gain',     10);
         $statGain   = (int) $settings->get('job_daily_stat_gain',   1);
 
-        $db->query(
-            "UPDATE players p
-             JOIN job_positions jp ON jp.id = p.job_position_id
-             JOIN jobs j           ON j.id  = jp.job_id
-             SET p.credits        = p.credits + jp.daily_salary,
-                 p.job_xp         = p.job_xp + ?,
-                 p.job_stat_tech      = p.job_stat_tech      + (IF(j.stat_1 = 'tech',      ?, 0) + IF(j.stat_2 = 'tech',      ?, 0)),
-                 p.job_stat_endurance = p.job_stat_endurance + (IF(j.stat_1 = 'endurance', ?, 0) + IF(j.stat_2 = 'endurance', ?, 0)),
-                 p.job_stat_charisme  = p.job_stat_charisme  + (IF(j.stat_1 = 'charisme',  ?, 0) + IF(j.stat_2 = 'charisme',  ?, 0)),
-                 p.last_salary_at = NOW(),
-                 p.updated_at     = NOW()
-             WHERE p.job_position_id IS NOT NULL
-               AND HOUR(NOW()) >= ?
-               AND (p.last_salary_at IS NULL OR DATE(p.last_salary_at) < CURDATE())",
-            [$xpGain, $statGain, $statGain, $statGain, $statGain, $statGain, $statGain, $payoutHour]
-        );
-        $salaryAffected = $db->affectedRows();
+        // Advisory lock : empeche 2 ticks concurrents (cron + run manuel) de double-payer.
+        // Si on n'arrive pas a obtenir le lock en 0s, on saute le payout (autre process le fait).
+        $lockRow = $db->query("SELECT GET_LOCK('cyberrun_tick_salary', 0) AS got")->getRowArray();
+        $hasLock = ((int) ($lockRow['got'] ?? 0)) === 1;
 
-        // Auto-promotion : pour chaque employe paye, monte au plus haut rank debloque par son XP actuel.
-        $db->query(
-            'UPDATE players p
-             JOIN job_positions current ON current.id = p.job_position_id
-             SET p.job_position_id = (
-                SELECT jp.id FROM job_positions jp
-                WHERE jp.job_id = current.job_id
-                  AND jp.xp_required <= p.job_xp
-                ORDER BY jp.rank DESC
-                LIMIT 1
-             )
-             WHERE p.job_position_id IS NOT NULL
-               AND DATE(p.last_salary_at) = CURDATE()'
-        );
+        $salaryAffected = 0;
+        if ($hasLock) {
+            $db->query(
+                "UPDATE players p
+                 JOIN job_positions jp ON jp.id = p.job_position_id
+                 JOIN jobs j           ON j.id  = jp.job_id
+                 SET p.credits        = p.credits + jp.daily_salary,
+                     p.job_xp         = p.job_xp + ?,
+                     p.job_stat_tech      = p.job_stat_tech      + (IF(j.stat_1 = 'tech',      ?, 0) + IF(j.stat_2 = 'tech',      ?, 0)),
+                     p.job_stat_endurance = p.job_stat_endurance + (IF(j.stat_1 = 'endurance', ?, 0) + IF(j.stat_2 = 'endurance', ?, 0)),
+                     p.job_stat_charisme  = p.job_stat_charisme  + (IF(j.stat_1 = 'charisme',  ?, 0) + IF(j.stat_2 = 'charisme',  ?, 0)),
+                     p.last_salary_at = NOW(),
+                     p.updated_at     = NOW()
+                 WHERE p.job_position_id IS NOT NULL
+                   AND HOUR(NOW()) >= ?
+                   AND (p.last_salary_at IS NULL OR DATE(p.last_salary_at) < CURDATE())",
+                [$xpGain, $statGain, $statGain, $statGain, $statGain, $statGain, $statGain, $payoutHour]
+            );
+            $salaryAffected = $db->affectedRows();
+
+            // Auto-promotion : pour chaque employe paye, monte au plus haut rank debloque par son XP actuel.
+            $db->query(
+                'UPDATE players p
+                 JOIN job_positions current ON current.id = p.job_position_id
+                 SET p.job_position_id = (
+                    SELECT jp.id FROM job_positions jp
+                    WHERE jp.job_id = current.job_id
+                      AND jp.xp_required <= p.job_xp
+                    ORDER BY jp.rank DESC
+                    LIMIT 1
+                 )
+                 WHERE p.job_position_id IS NOT NULL
+                   AND DATE(p.last_salary_at) = CURDATE()'
+            );
+
+            $db->query("SELECT RELEASE_LOCK('cyberrun_tick_salary')");
+        }
 
         // Bots : font tourner leurs actions apres la regen pour qu'ils benefient des points fraichement gagnes.
         $botStats = (new BotService())->tickAll();
