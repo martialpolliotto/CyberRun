@@ -210,7 +210,7 @@
                                     <input type="number" name="quantity" min="1" max="<?= (int) $r['quantity'] ?>" value="1"
                                            class="form-control form-control-sm font-monospace text-center" style="width: 3.5rem;"
                                            title="Quantité à vendre">
-                                    <button type="submit" class="btn btn-sm btn-outline-dark" title="Vendre au vendor PNJ">
+                                    <button type="submit" class="btn btn-sm btn-outline-dark" title="Revendre au marchand">
                                         <i class="bi bi-cash"></i> <?= number_format($unitPay) ?>¢/u
                                     </button>
                                 </form>
@@ -270,7 +270,7 @@
                                 <?php endif ?>
                                 <?php if ($basePrice > 0): ?>
                                     <div class="col-md-12 text-muted">
-                                        Prix vendor : <?= number_format($basePrice) ?>¢
+                                        Prix marchand : <?= number_format($basePrice) ?>¢
                                         · Rachat <?= (int) $buyback_pct ?>% : <?= number_format($unitPay) ?>¢/u
                                     </div>
                                 <?php endif ?>

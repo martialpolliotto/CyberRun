@@ -113,7 +113,7 @@ class Inventory extends BaseController
             return redirect()->to('/inventory')->with('error', 'Tu n\'as pas autant d\'exemplaires.');
         }
         if ((int) $row['price'] <= 0) {
-            return redirect()->to('/inventory')->with('error', 'Cet item n\'a pas de prix : le vendor ne le rachète pas.');
+            return redirect()->to('/inventory')->with('error', 'Cet item n\'a pas de prix : le marchand ne le rachète pas.');
         }
 
         $pct      = (int) model(GameSettingModel::class)->get('vendor_buyback_pct', 50);
