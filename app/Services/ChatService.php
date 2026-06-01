@@ -13,9 +13,11 @@ use CodeIgniter\I18n\Time;
  */
 class ChatService
 {
-    /** Channels valides : 'global', 'newbie', 'faction-{id}', 'company-{id}' (a venir). */
-    public const CHANNEL_GLOBAL = 'global';
-    public const CHANNEL_NEWBIE = 'newbie';
+    /** Channels valides : 'global', 'newbie', 'trade', 'company', 'faction-{id}'. */
+    public const CHANNEL_GLOBAL  = 'global';
+    public const CHANNEL_NEWBIE  = 'newbie';
+    public const CHANNEL_TRADE   = 'trade';
+    public const CHANNEL_COMPANY = 'company';
 
     /**
      * @return array{ok: bool, message: string, message_id?: int}
@@ -90,7 +92,7 @@ class ChatService
     /** Verifie qu'un joueur peut poster sur ce channel. */
     public function canPostToChannel(array $player, string $channel): bool
     {
-        if ($channel === self::CHANNEL_GLOBAL || $channel === self::CHANNEL_NEWBIE) {
+        if (in_array($channel, [self::CHANNEL_GLOBAL, self::CHANNEL_NEWBIE, self::CHANNEL_TRADE, self::CHANNEL_COMPANY], true)) {
             return true;
         }
         if (preg_match('/^faction-(\d+)$/', $channel, $m) === 1) {
@@ -103,8 +105,10 @@ class ChatService
     public function visibleChannels(array $player): array
     {
         $out = [
-            ['key' => self::CHANNEL_GLOBAL, 'label' => 'Global'],
-            ['key' => self::CHANNEL_NEWBIE, 'label' => 'Débutants'],
+            ['key' => self::CHANNEL_GLOBAL,  'label' => 'Global'],
+            ['key' => self::CHANNEL_TRADE,   'label' => 'Trade'],
+            ['key' => self::CHANNEL_NEWBIE,  'label' => 'Débutants'],
+            ['key' => self::CHANNEL_COMPANY, 'label' => 'Company'],
         ];
         if (! empty($player['faction_id'])) {
             $faction = db_connect()->table('factions')
