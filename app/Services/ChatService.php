@@ -20,6 +20,19 @@ class ChatService
     public const CHANNEL_COMPANY = 'company';
 
     /**
+     * Registry centralise des channels OUVERTS A TOUS (key => label).
+     * Source unique : ajouter une row ici suffit pour que le channel devienne accessible
+     * en lecture, en ecriture et apparaisse dans les tabs du widget.
+     * Les channels scopes (faction-{id}, company-{id}) sont gerés dynamiquement.
+     */
+    public const PUBLIC_CHANNELS = [
+        self::CHANNEL_GLOBAL  => 'Global',
+        self::CHANNEL_TRADE   => 'Trade',
+        self::CHANNEL_NEWBIE  => 'Débutants',
+        self::CHANNEL_COMPANY => 'Company',
+    ];
+
+    /**
      * @return array{ok: bool, message: string, message_id?: int}
      */
     public function send(int $playerId, string $channel, string $rawBody): array
@@ -113,7 +126,7 @@ class ChatService
     /** Verifie qu'un joueur peut poster sur ce channel. */
     public function canPostToChannel(array $player, string $channel): bool
     {
-        if (in_array($channel, [self::CHANNEL_GLOBAL, self::CHANNEL_NEWBIE, self::CHANNEL_TRADE, self::CHANNEL_COMPANY], true)) {
+        if (isset(self::PUBLIC_CHANNELS[$channel])) {
             return true;
         }
         if (preg_match('/^faction-(\d+)$/', $channel, $m) === 1) {
@@ -125,12 +138,10 @@ class ChatService
     /** Channels accessibles a un joueur (pour lecture). */
     public function visibleChannels(array $player): array
     {
-        $out = [
-            ['key' => self::CHANNEL_GLOBAL,  'label' => 'Global'],
-            ['key' => self::CHANNEL_TRADE,   'label' => 'Trade'],
-            ['key' => self::CHANNEL_NEWBIE,  'label' => 'Débutants'],
-            ['key' => self::CHANNEL_COMPANY, 'label' => 'Company'],
-        ];
+        $out = [];
+        foreach (self::PUBLIC_CHANNELS as $key => $label) {
+            $out[] = ['key' => $key, 'label' => $label];
+        }
         if (! empty($player['faction_id'])) {
             $faction = db_connect()->table('factions')
                 ->select('id, name, tag')

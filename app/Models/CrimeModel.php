@@ -230,14 +230,7 @@ class CrimeModel extends Model
             $xp      = (int) ($variant['reward_xp']          ?? $crime['reward_xp']);
             $catXp   = (int) ($variant['reward_category_xp'] ?? $crime['reward_category_xp']);
 
-            if ($credits > 0) {
-                $playerModel->builder()
-                    ->where('id', $playerId)
-                    ->update([
-                        'credits'    => new RawSql('credits + ' . $credits),
-                        'updated_at' => date('Y-m-d H:i:s'),
-                    ]);
-            }
+            $playerModel->creditUnconditional($playerId, $credits);
             if ($xp > 0) {
                 $playerModel->grantXp($playerId, $xp);
             }

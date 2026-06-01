@@ -1,18 +1,6 @@
 <?= $this->extend('layouts/main') ?>
 
-<?php
-    $now = \CodeIgniter\I18n\Time::now();
-    $rel = static function (?string $datetime) use ($now): string {
-        if ($datetime === null) return '';
-        $t       = \CodeIgniter\I18n\Time::parse($datetime);
-        $seconds = max(1, $now->getTimestamp() - $t->getTimestamp());
-        if ($seconds < 60)        return $seconds . 's';
-        if ($seconds < 3600)      return intdiv($seconds, 60) . 'm';
-        if ($seconds < 86400)     return intdiv($seconds, 3600) . 'h';
-        if ($seconds < 7 * 86400) return intdiv($seconds, 86400) . 'd';
-        return intdiv($seconds, 7 * 86400) . 'w';
-    };
-?>
+<?php helper('time'); ?>
 
 <?= $this->section('content') ?>
 
@@ -46,7 +34,7 @@
                         <div class="flex-grow-1">
                             <div class="d-flex justify-content-between align-items-baseline">
                                 <strong class="<?= $isUnread ? 'text-dark' : 'text-muted' ?>"><?= esc($t['partner_username']) ?></strong>
-                                <span class="text-muted small font-monospace"><?= esc($rel($t['last_at'])) ?></span>
+                                <span class="text-muted small font-monospace"><?= esc(relative_short($t['last_at'])) ?></span>
                             </div>
                             <div class="small <?= $isUnread ? 'fw-semibold' : 'text-muted' ?> text-truncate" style="max-width: 38rem;">
                                 <?= esc(mb_substr((string) $t['last_body'], 0, 160)) ?>

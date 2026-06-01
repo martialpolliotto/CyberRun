@@ -146,12 +146,7 @@ class Inventory extends BaseController
             ->where('quantity', 0)
             ->delete();
 
-        model(PlayerModel::class)->builder()
-            ->where('id', (int) $player['id'])
-            ->update([
-                'credits'    => new RawSql('credits + ' . $total),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ]);
+        model(PlayerModel::class)->creditUnconditional((int) $player['id'], $total);
 
         $db->transComplete();
 

@@ -32,15 +32,12 @@ abstract class BaseController extends Controller
      */
     public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger)
     {
-        // Load here all helpers you want to be available in your controllers that extend BaseController.
-        // Caution: Do not put the this below the parent::initController() call below.
-        // $this->helpers = ['form', 'url'];
+        // Helpers globaux : player (resolve_username), time (relative_short).
+        // Disponibles sans besoin d'appeler helper() dans chaque controller/view.
+        $this->helpers = ['player', 'time'];
 
         // Caution: Do not edit this line.
         parent::initController($request, $response, $logger);
-
-        // Preload any models, libraries, etc, here.
-        // $this->session = service('session');
     }
 
     /** True si la requete vient de htmx (header HX-Request: true). */
@@ -100,17 +97,9 @@ abstract class BaseController extends Controller
         return $me;
     }
 
-    /**
-     * Resout le username (via users.username) d'un player_id donne. Fallback 'inconnu'.
-     * Centralise pour eviter 5 copies du meme join dans les controllers/services.
-     */
+    /** @deprecated utiliser resolve_username() global a la place. */
     protected function resolveUsername(int $playerId): string
     {
-        $row = db_connect()->table('players p')
-            ->select('users.username')
-            ->join('users', 'users.id = p.user_id', 'inner')
-            ->where('p.id', $playerId)
-            ->get()->getRowArray();
-        return (string) ($row['username'] ?? 'inconnu');
+        return resolve_username($playerId);
     }
 }

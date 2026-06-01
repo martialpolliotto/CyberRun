@@ -138,12 +138,7 @@ class MissionModel extends Model
 
         // Credits
         if ((int) $mission['reward_credits'] > 0) {
-            $playerModel->builder()
-                ->where('id', $playerId)
-                ->update([
-                    'credits'    => new \CodeIgniter\Database\RawSql('credits + ' . (int) $mission['reward_credits']),
-                    'updated_at' => date('Y-m-d H:i:s'),
-                ]);
+            $playerModel->creditUnconditional($playerId, (int) $mission['reward_credits']);
             $rewardParts[] = '+' . (int) $mission['reward_credits'] . ' credits';
         }
 

@@ -4,7 +4,7 @@ namespace App\Controllers;
 
 use App\Models\ChatMessageModel;
 use App\Models\PlayerModel;
-use App\Models\PlayerRelationModel;
+use App\Models\PlayerMuteModel;
 use App\Services\ChatService;
 
 /**
@@ -105,14 +105,10 @@ class Chat extends BaseController
             ->with($r['ok'] ? 'message' : 'error', $r['ok'] ? '' : $r['message']);
     }
 
-    /** Ids des joueurs marques 'enemy' par moi -> messages masques cote client. */
+    /** Ids des joueurs que j'ai mute -> messages masques cote client. */
     private function mutedPlayerIds(int $myPlayerId): array
     {
-        $rows = model(PlayerRelationModel::class)
-            ->where('player_id', $myPlayerId)
-            ->where('relation_type', 'enemy')
-            ->findAll();
-        return array_map(static fn($r) => (int) $r['target_player_id'], $rows);
+        return model(PlayerMuteModel::class)->mutedIdsFor($myPlayerId);
     }
 
 }

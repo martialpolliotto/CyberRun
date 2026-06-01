@@ -1,19 +1,6 @@
 <?= $this->extend('layouts/main') ?>
 
-<?php
-    helper('number');
-    $now = \CodeIgniter\I18n\Time::now();
-    $rel = static function (?string $datetime) use ($now): string {
-        if ($datetime === null) return '';
-        $t       = \CodeIgniter\I18n\Time::parse($datetime);
-        $seconds = max(1, $now->getTimestamp() - $t->getTimestamp());
-        if ($seconds < 60)        return $seconds . 's';
-        if ($seconds < 3600)      return intdiv($seconds, 60) . 'm';
-        if ($seconds < 86400)     return intdiv($seconds, 3600) . 'h';
-        if ($seconds < 7 * 86400) return intdiv($seconds, 86400) . 'd';
-        return intdiv($seconds, 7 * 86400) . 'w';
-    };
-?>
+<?php helper(['number', 'time']); ?>
 
 <?= $this->section('content') ?>
 
@@ -46,7 +33,7 @@
                     <div style="max-width: 38rem;" class="<?= $mine ? 'text-end' : '' ?>">
                         <div class="small text-muted mb-1">
                             <strong><?= $mine ? 'Toi' : esc($partner['username']) ?></strong>
-                            · <span class="font-monospace"><?= esc($rel($m['created_at'])) ?></span>
+                            · <span class="font-monospace"><?= esc(relative_short($m['created_at'])) ?></span>
                         </div>
                         <div class="p-2 border rounded <?= $mine ? 'bg-dark text-white' : 'bg-light' ?>"
                              style="white-space: pre-wrap; word-wrap: break-word;">

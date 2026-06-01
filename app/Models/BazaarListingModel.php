@@ -134,7 +134,7 @@ class BazaarListingModel extends Model
         $db = db_connect();
         $db->transStart();
 
-        $this->returnQuantityToInventory($sellerId, (int) $listing['item_id'], (int) $listing['quantity']);
+        model(PlayerItemModel::class)->addStackable($sellerId, (int) $listing['item_id'], (int) $listing['quantity']);
         $this->delete($listingId);
 
         $db->transComplete();
@@ -193,26 +193,12 @@ class BazaarListingModel extends Model
             return ['ok' => false, 'message' => 'Stock insuffisant sur ce listing.'];
         }
 
-        // Debit acheteur (atomique).
-        $playerModel->builder()
-            ->where('id', $buyerId)
-            ->where('credits >=', $total)
-            ->update([
-                'credits'    => new RawSql('credits - ' . $total),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ]);
-        if ($db->affectedRows() === 0) {
+        if (! $playerModel->debitAtomic($buyerId, $total)) {
             $db->transRollback();
             return ['ok' => false, 'message' => 'Credits insuffisants au moment du debit.'];
         }
-
         // Credit vendeur (net = total - fee, fee sink).
-        $playerModel->builder()
-            ->where('id', $sellerId)
-            ->update([
-                'credits'    => new RawSql('credits + ' . $net),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ]);
+        $playerModel->creditUnconditional($sellerId, $net);
 
         // Cleanup : si le listing est vide, on le supprime.
         $this->builder()
@@ -221,7 +207,7 @@ class BazaarListingModel extends Model
             ->delete();
 
         // Ajoute items a l'acheteur.
-        $this->returnQuantityToInventory($buyerId, (int) $listing['item_id'], $quantity);
+        model(PlayerItemModel::class)->addStackable($buyerId, (int) $listing['item_id'], $quantity);
 
         $db->transComplete();
 
@@ -234,30 +220,4 @@ class BazaarListingModel extends Model
         ];
     }
 
-    /**
-     * Ajoute un quantite d'un item dans l'inventaire d'un joueur. Si le joueur a deja un
-     * player_items non equipe sur cet item, on incremente sa quantity. Sinon on cree.
-     */
-    private function returnQuantityToInventory(int $playerId, int $itemId, int $quantity): void
-    {
-        $piModel = model(PlayerItemModel::class);
-        // On agrege uniquement sur les rows non equipees pour pas perturber un slot.
-        $existing = $piModel->where('player_id', $playerId)
-            ->where('item_id', $itemId)
-            ->where('equipped', 0)
-            ->first();
-        if ($existing !== null) {
-            $piModel->update($existing['id'], [
-                'quantity'   => new RawSql('quantity + ' . $quantity),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ]);
-        } else {
-            $piModel->insert([
-                'player_id' => $playerId,
-                'item_id'   => $itemId,
-                'equipped'  => 0,
-                'quantity'  => $quantity,
-            ]);
-        }
-    }
 }

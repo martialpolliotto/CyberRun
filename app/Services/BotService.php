@@ -423,14 +423,7 @@ class BotService
 
         $db = db_connect();
         $db->transStart();
-        model(PlayerModel::class)->builder()
-            ->where('id', (int) $bot['id'])
-            ->where('credits >=', (int) $pick['price'])
-            ->update([
-                'credits'    => new \CodeIgniter\Database\RawSql('credits - ' . (int) $pick['price']),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ]);
-        if ($db->affectedRows() === 0) {
+        if (! model(PlayerModel::class)->debitAtomic((int) $bot['id'], (int) $pick['price'])) {
             $db->transRollback();
             return null;
         }

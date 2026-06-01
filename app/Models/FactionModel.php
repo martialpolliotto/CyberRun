@@ -66,15 +66,7 @@ class FactionModel extends Model
         $db = db_connect();
         $db->transStart();
 
-        // Debit credits atomique.
-        $playerModel->builder()
-            ->where('id', $founderPlayerId)
-            ->where('credits >=', $cost)
-            ->update([
-                'credits'    => new RawSql('credits - ' . $cost),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ]);
-        if ($db->affectedRows() === 0) {
+        if (! $playerModel->debitAtomic($founderPlayerId, $cost)) {
             $db->transRollback();
             return ['ok' => false, 'message' => 'Credits insuffisants au moment du debit.'];
         }

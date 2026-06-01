@@ -12,20 +12,7 @@
         'level'   => '★',
     ];
 
-    $now = \CodeIgniter\I18n\Time::now();
-
-    /**
-     * Formate un timestamp en distance relative compacte (1m, 4h, 2d, 1w).
-     */
-    $rel = static function (string $datetime) use ($now): string {
-        $t       = \CodeIgniter\I18n\Time::parse($datetime);
-        $seconds = max(1, $now->getTimestamp() - $t->getTimestamp());
-        if ($seconds < 60)        return $seconds . 's';
-        if ($seconds < 3600)      return intdiv($seconds, 60) . 'm';
-        if ($seconds < 86400)     return intdiv($seconds, 3600) . 'h';
-        if ($seconds < 7 * 86400) return intdiv($seconds, 86400) . 'd';
-        return intdiv($seconds, 7 * 86400) . 'w';
-    };
+    helper('time');
 
     /**
      * Construit la phrase finale à partir de la clef i18n + params.
@@ -100,7 +87,7 @@
             <?php endif ?>
             <?php foreach ($rows as $row): ?>
                 <li class="list-group-item d-flex gap-3 align-items-start">
-                    <span class="text-muted font-monospace small" style="width: 3rem; flex-shrink: 0; text-align: right;"><?= esc($rel($row['created_at'])) ?></span>
+                    <span class="text-muted font-monospace small" style="width: 3rem; flex-shrink: 0; text-align: right;"><?= esc(relative_short($row['created_at'])) ?></span>
                     <span class="text-muted text-center" style="width: 1.5rem; flex-shrink: 0;"><?= esc($categoryIcon[$row['category']] ?? '·') ?></span>
                     <span class="flex-grow-1"><?= $renderLine($row) ?></span>
                 </li>

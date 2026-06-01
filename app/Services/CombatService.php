@@ -418,19 +418,11 @@ class CombatService
             $mugPct = (int) $this->settings()->get('combat_mug_pct', 20);
             $stolen = (int) floor((int) $loser['credits'] * $mugPct / 100);
             if ($stolen > 0) {
-                // Debit atomique du perdant : guard `credits >= stolen` evite BIGINT UNSIGNED underflow
-                // si le perdant a depense des credits entre notre read et notre write.
-                $playerModel->builder()
-                    ->where('id', $loserId)
-                    ->where('credits >=', $stolen)
-                    ->update([
-                        'credits'    => new RawSql('credits - ' . $stolen),
-                        'updated_at' => date('Y-m-d H:i:s'),
-                    ]);
-                $actuallyStolen = $db->affectedRows() > 0 ? $stolen : 0;
+                // Debit atomique du perdant (guard evite BIGINT UNSIGNED underflow
+                // si le perdant a depense des credits entre notre read et notre write).
+                $actuallyStolen = $playerModel->debitAtomic($loserId, $stolen) ? $stolen : 0;
                 if ($actuallyStolen > 0) {
-                    $playerModel->builder()->where('id', $playerId)
-                        ->update(['credits' => new RawSql('credits + ' . $actuallyStolen), 'updated_at' => date('Y-m-d H:i:s')]);
+                    $playerModel->creditUnconditional($playerId, $actuallyStolen);
                     $combatModel->update($combatId, ['mug_amount' => $actuallyStolen]);
                 }
                 $stolen = $actuallyStolen;
@@ -468,8 +460,7 @@ class CombatService
                 }
             }
             if ($totalBounty > 0) {
-                $playerModel->builder()->where('id', $playerId)
-                    ->update(['credits' => new RawSql('credits + ' . $totalBounty), 'updated_at' => date('Y-m-d H:i:s')]);
+                $playerModel->creditUnconditional($playerId, $totalBounty);
                 $msg .= ' Bounty claim : +' . number_format($totalBounty) . ' credits encaisses.';
                 ActivityLogger::log($playerId, 'eco', 'Log.bounty_claimed',
                     ['target' => $this->resolveUsername($loserId), 'amount' => $totalBounty], $loserId);
@@ -498,13 +489,10 @@ class CombatService
         return ['ok' => true, 'message' => $msg ?: 'Combat termine, tu pars.'];
     }
 
+    /** Pass-through au helper global. */
     private function resolveUsername(int $playerId): string
     {
-        $row = db_connect()->table('players p')
-            ->select('users.username')
-            ->join('users', 'users.id = p.user_id', 'inner')
-            ->where('p.id', $playerId)
-            ->get()->getRowArray();
-        return (string) ($row['username'] ?? 'inconnu');
+        helper('player');
+        return resolve_username($playerId);
     }
 }

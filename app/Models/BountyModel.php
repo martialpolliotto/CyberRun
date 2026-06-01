@@ -46,15 +46,7 @@ class BountyModel extends Model
         $db = db_connect();
         $db->transStart();
 
-        // Debit credits placer (atomique).
-        $playerModel->builder()
-            ->where('id', $placerId)
-            ->where('credits >=', $amount)
-            ->update([
-                'credits'    => new RawSql('credits - ' . $amount),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ]);
-        if ($db->affectedRows() === 0) {
+        if (! $playerModel->debitAtomic($placerId, $amount)) {
             $db->transRollback();
             return ['ok' => false, 'message' => 'Credits insuffisants au moment du placement.'];
         }
@@ -110,12 +102,7 @@ class BountyModel extends Model
             return ['ok' => false, 'message' => 'Prime deja claim ou annulee entre-temps.'];
         }
 
-        model(PlayerModel::class)->builder()
-            ->where('id', $placerId)
-            ->update([
-                'credits'    => new RawSql('credits + ' . $amount),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ]);
+        model(PlayerModel::class)->creditUnconditional($placerId, $amount);
 
         $db->transComplete();
         return ['ok' => true, 'message' => 'Prime annulee, ' . number_format($amount) . ' credits rembourses.', 'refunded' => $amount];

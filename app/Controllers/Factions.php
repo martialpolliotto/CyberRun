@@ -171,14 +171,7 @@ class Factions extends BaseController
         $db          = db_connect();
         $db->transStart();
 
-        $playerModel->builder()
-            ->where('id', (int) $me['id'])
-            ->where('credits >=', $amount)
-            ->update([
-                'credits'    => new RawSql('credits - ' . $amount),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ]);
-        if ($db->affectedRows() === 0) {
+        if (! $playerModel->debitAtomic((int) $me['id'], $amount)) {
             $db->transRollback();
             return redirect()->to('/factions/mine')->with('error', 'Credits insuffisants.');
         }

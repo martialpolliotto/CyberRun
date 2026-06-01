@@ -79,16 +79,7 @@ class Shops extends BaseController
         $db->transStart();
 
         // Débit atomique : refuse si entre temps les credits sont passés en dessous.
-        $playerModel->builder()
-            ->where('id', $player['id'])
-            ->where('credits >=', $price)
-            ->update([
-                'credits'    => new \CodeIgniter\Database\RawSql('credits - ' . $price),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ]);
-        $affected = $db->affectedRows();
-
-        if ($affected === 0) {
+        if (! $playerModel->debitAtomic((int) $player['id'], $price)) {
             $db->transRollback();
             return redirect()->to('/shop/' . $slug)->with('error', 'Achat échoué (crédits insuffisants ou conflit).');
         }

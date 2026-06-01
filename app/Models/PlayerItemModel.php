@@ -123,4 +123,36 @@ class PlayerItemModel extends Model
             'message' => 'Slot ' . esc($slot) . ' déséquipé.',
         ];
     }
+
+    /**
+     * Ajoute une quantite d'un item dans l'inventaire d'un joueur. Si le joueur a deja
+     * un player_item NON EQUIPE sur cet item, on incremente sa quantity. Sinon on cree.
+     *
+     * Methode shared : utilisee par BazaarListingModel (achat + retour de listing),
+     * et idealement par les futures sources de drops (crime rewards, mission rewards,
+     * combat loot, gifts via messagerie).
+     *
+     * On agrege uniquement sur les rows non equipees pour ne pas modifier un slot equipe.
+     */
+    public function addStackable(int $playerId, int $itemId, int $quantity): void
+    {
+        if ($quantity <= 0) return;
+        $existing = $this->where('player_id', $playerId)
+            ->where('item_id', $itemId)
+            ->where('equipped', 0)
+            ->first();
+        if ($existing !== null) {
+            $this->update($existing['id'], [
+                'quantity'   => new \CodeIgniter\Database\RawSql('quantity + ' . $quantity),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+            return;
+        }
+        $this->insert([
+            'player_id' => $playerId,
+            'item_id'   => $itemId,
+            'equipped'  => 0,
+            'quantity'  => $quantity,
+        ]);
+    }
 }

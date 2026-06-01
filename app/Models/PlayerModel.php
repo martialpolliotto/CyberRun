@@ -819,6 +819,42 @@ class PlayerModel extends Model
     }
 
     /**
+     * Debit atomique des credits du joueur, avec guard `credits >= amount`.
+     * Retourne true si le debit a reussi (lignes affectees), false sinon.
+     * NE wrap PAS dans une transaction : le caller decide du scope transactionnel.
+     *
+     * Centralise un pattern qui etait copie-colle dans 8 endroits (Bounties::place,
+     * Bazaar::buy, Factions::create/donate, Inventory::sellToVendor, Shops, etc.).
+     */
+    public function debitAtomic(int $playerId, int $amount): bool
+    {
+        if ($amount <= 0) return true; // no-op pour amount=0
+        $this->builder()
+            ->where('id', $playerId)
+            ->where('credits >=', $amount)
+            ->update([
+                'credits'    => new \CodeIgniter\Database\RawSql('credits - ' . $amount),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+        return db_connect()->affectedRows() > 0;
+    }
+
+    /**
+     * Credit inconditionnel des credits du joueur. Helper symetrique a debitAtomic
+     * pour standardiser les transferts/payouts/refunds.
+     */
+    public function creditUnconditional(int $playerId, int $amount): void
+    {
+        if ($amount <= 0) return;
+        $this->builder()
+            ->where('id', $playerId)
+            ->update([
+                'credits'    => new \CodeIgniter\Database\RawSql('credits + ' . $amount),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+    }
+
+    /**
      * Transfere des credits d'un joueur a un autre. Atomique. Log activite des 2 cotes.
      *
      * @return array{ok: bool, message: string}
@@ -843,24 +879,11 @@ class PlayerModel extends Model
 
         $db  = db_connect();
         $db->transStart();
-
-        $this->builder()
-            ->where('id', $playerId)
-            ->where('credits >=', $amount)
-            ->update([
-                'credits'    => new \CodeIgniter\Database\RawSql('credits - ' . $amount),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ]);
-        if ($db->affectedRows() === 0) {
+        if (! $this->debitAtomic($playerId, $amount)) {
             $db->transRollback();
             return ['ok' => false, 'message' => 'Credits insuffisants au moment du paiement.'];
         }
-        $this->builder()
-            ->where('id', $targetPlayerId)
-            ->update([
-                'credits'    => new \CodeIgniter\Database\RawSql('credits + ' . $amount),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ]);
+        $this->creditUnconditional($targetPlayerId, $amount);
         $db->transComplete();
 
         $targetUsername = $this->resolveUsername($targetPlayerId);
@@ -873,14 +896,11 @@ class PlayerModel extends Model
         return ['ok' => true, 'message' => $amount . ' credits envoyes a ' . esc($targetUsername) . '.'];
     }
 
-    /** Helper : recupere le username d'un player via join sur users. */
+    /** Pass-through au helper global. */
     private function resolveUsername(int $playerId): string
     {
-        $row = $this->select('users.username')
-            ->join('users', 'users.id = players.user_id', 'inner')
-            ->where('players.id', $playerId)
-            ->first();
-        return (string) ($row['username'] ?? 'inconnu');
+        helper('player');
+        return resolve_username($playerId);
     }
 
     /**
@@ -917,15 +937,7 @@ class PlayerModel extends Model
         $db = db_connect();
         $db->transStart();
 
-        // Debit atomique des credits.
-        $this->builder()
-            ->where('id', $playerId)
-            ->where('credits >=', $cost)
-            ->update([
-                'credits'    => new \CodeIgniter\Database\RawSql('credits - ' . $cost),
-                'updated_at' => $now->toDateTimeString(),
-            ]);
-        if ($db->affectedRows() === 0) {
+        if (! $this->debitAtomic($playerId, $cost)) {
             $db->transRollback();
             return ['ok' => false, 'message' => 'Credits insuffisants au moment du paiement.'];
         }
