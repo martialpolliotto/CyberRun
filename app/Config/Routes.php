@@ -40,6 +40,7 @@ $routes->group('', ['filter' => ['session', 'free']], static function ($routes) 
 
     $routes->get('inventory', 'Inventory::index');
     $routes->post('inventory/consume/(:num)', 'Inventory::consume/$1');
+    $routes->post('inventory/sell/(:num)',    'Inventory::sellToVendor/$1');
 
     $routes->get('jobs',                   'Jobs::index');
     $routes->get('jobs/(:segment)',        'Jobs::show/$1');

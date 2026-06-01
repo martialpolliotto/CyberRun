@@ -51,7 +51,11 @@ class Bazaar extends BaseController
             (int) $this->request->getPost('quantity'),
             (int) $this->request->getPost('unit_price'),
         );
-        return redirect()->to('/bazaar/mine')->with($r['ok'] ? 'message' : 'error', $r['message']);
+
+        $back = (string) $this->request->getPost('return_to');
+        $back = $back !== '' ? $back : '/bazaar/mine';
+
+        return redirect()->to($back)->with($r['ok'] ? 'message' : 'error', $r['message']);
     }
 
     public function unlist(int $listingId)

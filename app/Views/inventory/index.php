@@ -20,8 +20,21 @@
     $tier      = \App\Models\PlayerModel::addictionTier($addiction);
 
     $categoryLabels = \App\Models\ItemModel::CATEGORIES;
-    $categoryBadge = static function (string $cat) use ($categoryLabels): string {
-        return '<span class="badge bg-light text-dark border">' . esc($categoryLabels[$cat] ?? $cat) . '</span>';
+
+    $categoryIcons = [
+        'all'        => 'bi-grid-3x3-gap',
+        'equipped'   => 'bi-shield-check',
+        'available'  => 'bi-box-seam',
+        'weapon'     => 'bi-lightning-charge',
+        'protection' => 'bi-shield',
+        'cyberware'  => 'bi-cpu',
+        'booster'    => 'bi-rocket-takeoff',
+        'drug'       => 'bi-capsule',
+    ];
+
+    $rowIcon = static function (array $r) use ($categoryIcons): string {
+        $cat = $r['_category'] ?? 'all';
+        return $categoryIcons[$cat] ?? 'bi-box';
     };
 
     $formatRemaining = static function (int $seconds): string {
@@ -65,72 +78,57 @@
         <?= view('partials/alert', ['variant' => 'danger', 'message' => session('error')]) ?>
     <?php endif ?>
 
-    <!-- Effets actifs -->
-    <div class="row g-3 mb-3">
+    <!-- Effets actifs (condense) -->
+    <div class="row g-2 mb-3">
         <?php foreach (['booster' => 'Booster actif', 'drug' => 'Drogue active'] as $kind => $label): ?>
             <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header bg-light small text-uppercase fw-semibold"><?= esc($label) ?></div>
-                    <div class="card-body py-2">
-                        <?php $e = $effectsByKind[$kind] ?? null; ?>
-                        <?php if ($e === null): ?>
-                            <span class="text-muted fst-italic small">Aucun.</span>
-                        <?php else: ?>
-                            <?php $remaining = max(0, \CodeIgniter\I18n\Time::parse($e['expires_at'])->getTimestamp() - $now->getTimestamp()); ?>
-                            <div class="d-flex justify-content-between align-items-baseline">
-                                <strong><?= esc($e['item_name']) ?></strong>
-                                <span class="font-monospace small" data-effect-countdown data-seconds-left="<?= (int) $remaining ?>">
-                                    <?= $formatRemaining($remaining) ?>
-                                </span>
-                            </div>
-                        <?php endif ?>
-                    </div>
-                </div>
+                <div class="card h-100"><div class="card-body py-2">
+                    <?php $e = $effectsByKind[$kind] ?? null; ?>
+                    <?php if ($e === null): ?>
+                        <span class="text-muted fst-italic small"><?= esc($label) ?> : aucun.</span>
+                    <?php else: ?>
+                        <?php $remaining = max(0, \CodeIgniter\I18n\Time::parse($e['expires_at'])->getTimestamp() - $now->getTimestamp()); ?>
+                        <div class="d-flex justify-content-between align-items-baseline">
+                            <span><span class="text-muted text-uppercase small"><?= esc($label) ?> :</span> <strong><?= esc($e['item_name']) ?></strong></span>
+                            <span class="font-monospace small" data-effect-countdown data-seconds-left="<?= (int) $remaining ?>">
+                                <?= $formatRemaining($remaining) ?>
+                            </span>
+                        </div>
+                    <?php endif ?>
+                </div></div>
             </div>
         <?php endforeach ?>
     </div>
 
-    <!-- Addiction (condensee si rien d'actif) -->
-    <div class="card mb-3">
-        <div class="card-body py-2">
-            <div class="d-flex justify-content-between align-items-baseline">
-                <span class="small text-uppercase text-muted fw-semibold">Dépendance</span>
-                <span class="font-monospace small"><?= $addiction ?> · <?= esc($tier['label']) ?></span>
-            </div>
-            <div class="progress mt-1" style="height: 4px;">
-                <div class="progress-bar bg-dark" style="width: <?= min(100, $addiction) ?>%"></div>
-            </div>
-            <?php if ((int) $tier['stat_malus'] > 0 || (int) $tier['overdose_bonus'] > 0): ?>
-                <div class="small text-muted mt-1">
-                    <?php if ((int) $tier['stat_malus'] > 0): ?>−<?= (int) $tier['stat_malus'] ?> stats · <?php endif ?>
-                    <?php if ((int) $tier['overdose_bonus'] > 0): ?>+<?= (int) $tier['overdose_bonus'] ?>% overdose<?php endif ?>
-                </div>
-            <?php endif ?>
+    <!-- Addiction (compacte) -->
+    <div class="card mb-3"><div class="card-body py-2">
+        <div class="d-flex justify-content-between align-items-baseline">
+            <span class="small text-uppercase text-muted fw-semibold">Dépendance</span>
+            <span class="font-monospace small"><?= $addiction ?> · <?= esc($tier['label']) ?></span>
         </div>
+        <div class="progress mt-1" style="height: 4px;">
+            <div class="progress-bar bg-dark" style="width: <?= min(100, $addiction) ?>%"></div>
+        </div>
+    </div></div>
+
+    <!-- Filtres : icones categories en ligne -->
+    <div class="d-flex flex-wrap gap-1 mb-3">
+        <?php foreach ($categoryLabels as $key => $label): ?>
+            <?php
+                $isActive = $filter === $key;
+                $count    = (int) ($counts[$key] ?? 0);
+            ?>
+            <a href="/inventory?cat=<?= esc($key) ?>"
+               class="btn btn-sm <?= $isActive ? 'btn-dark' : 'btn-outline-dark' ?> d-flex align-items-center gap-1"
+               title="<?= esc($label) ?>">
+                <i class="bi <?= esc($categoryIcons[$key] ?? 'bi-box') ?>"></i>
+                <span class="d-none d-md-inline"><?= esc($label) ?></span>
+                <span class="badge bg-light text-dark border ms-1 font-monospace"><?= $count ?></span>
+            </a>
+        <?php endforeach ?>
     </div>
 
-    <!-- Filtres -->
-    <form method="get" action="/inventory" class="mb-3">
-        <div class="row g-2">
-            <div class="col-md-4">
-                <select name="cat" class="form-select" onchange="this.form.submit()">
-                    <?php foreach ($categoryLabels as $k => $label): ?>
-                        <option value="<?= esc($k) ?>" <?= $filter === $k ? 'selected' : '' ?>>
-                            <?= esc($label) ?>
-                        </option>
-                    <?php endforeach ?>
-                </select>
-            </div>
-            <div class="col-md-8 d-flex align-items-center text-muted small">
-                <?= count($rows) ?> objet<?= count($rows) > 1 ? 's' : '' ?> affiché<?= count($rows) > 1 ? 's' : '' ?>
-                <?php if ($filter !== 'all'): ?>
-                    sur <?= (int) $totalCount ?> au total
-                <?php endif ?>
-            </div>
-        </div>
-    </form>
-
-    <!-- Liste expandable -->
+    <!-- Liste compacte -->
     <?php if (empty($rows)): ?>
         <p class="text-muted fst-italic small">Aucun objet pour ce filtre.</p>
     <?php else: ?>
@@ -138,9 +136,9 @@
             <ul class="list-group list-group-flush">
                 <?php foreach ($rows as $r): ?>
                     <?php
-                        $isEquipped  = (int) $r['equipped'] === 1;
+                        $isEquipped   = (int) $r['equipped'] === 1;
                         $isConsumable = ! empty($r['consumable_type']);
-                        $kind = $r['consumable_type'] ?? null;
+                        $kind         = $r['consumable_type'] ?? null;
 
                         $cdRem = 0;
                         $hasActiveSameKind = false;
@@ -150,7 +148,6 @@
                             $hasActiveSameKind = $effectsByKind[$kind] !== null;
                         }
 
-                        // Status badge.
                         if (! empty($r['discontinued'])) {
                             $statusBadge = '<span class="badge bg-secondary">hors-circuit</span>';
                         } elseif ($isEquipped) {
@@ -159,72 +156,124 @@
                             $statusBadge = $cdRem > 0
                                 ? '<span class="badge bg-light text-muted">cooldown ' . $formatRemaining($cdRem) . '</span>'
                                 : ($hasActiveSameKind
-                                    ? '<span class="badge bg-light text-muted">effet déjà actif</span>'
+                                    ? '<span class="badge bg-light text-muted">effet actif</span>'
                                     : '<span class="badge bg-light text-dark border">prêt</span>');
                         } else {
                             $statusBadge = '<span class="badge bg-light text-dark border">disponible</span>';
                         }
+
+                        $basePrice = (int) ($r['price'] ?? 0);
+                        $unitPay   = $basePrice > 0 ? (int) floor($basePrice * (int) $buyback_pct / 100) : 0;
+                        $sellable  = ! $isEquipped && empty($r['discontinued']) && $unitPay > 0;
+                        $listable  = ! $isEquipped && empty($r['discontinued']);
                     ?>
-                    <li class="list-group-item p-0" x-data="{ open: false }">
-                        <!-- Ligne compacte cliquable -->
-                        <div class="d-flex align-items-center gap-3 px-3 py-2 user-select-none" style="cursor: pointer;" @click="open = !open">
-                            <span class="text-muted small font-monospace" style="width: 1rem;" x-text="open ? '−' : '+'">+</span>
-                            <strong class="flex-grow-1"><?= esc($r['name']) ?></strong>
-                            <?= $categoryBadge($r['_category']) ?>
+                    <li class="list-group-item p-0" x-data="{ open: false, sellOpen: false }">
+                        <!-- Ligne principale compacte -->
+                        <div class="d-flex align-items-center gap-2 px-3 py-2">
+                            <i class="bi <?= esc($rowIcon($r)) ?> text-muted"></i>
+                            <span class="fw-semibold flex-grow-1" style="cursor: pointer;" @click="open = !open">
+                                <?= esc($r['name']) ?>
+                            </span>
+                            <span class="font-monospace small text-muted" title="Quantité">×<?= (int) $r['quantity'] ?></span>
                             <?= $statusBadge ?>
-                        </div>
-                        <!-- Détail dépliable -->
-                        <div x-show="open" x-cloak class="px-3 pb-3 pt-1 border-top bg-light">
-                            <?php if (! empty($r['description'])): ?>
-                                <p class="text-muted fst-italic small mb-2"><?= esc($r['description']) ?></p>
+
+                            <!-- Action principale (consume / equip / unequip) -->
+                            <?php if ($isConsumable): ?>
+                                <form method="post" action="/inventory/consume/<?= (int) $r['pi_id'] ?>" class="m-0">
+                                    <?= csrf_field() ?>
+                                    <button type="submit" class="btn btn-sm btn-dark"
+                                            <?= $cdRem > 0 || $hasActiveSameKind || ! empty($r['discontinued']) ? 'disabled' : '' ?>>
+                                        <i class="bi bi-droplet"></i>
+                                    </button>
+                                </form>
+                            <?php elseif ($isEquipped): ?>
+                                <form method="post" action="/equipment/unequip/<?= esc($r['slot']) ?>" class="m-0">
+                                    <?= csrf_field() ?>
+                                    <button type="submit" class="btn btn-sm btn-outline-dark" title="Déséquiper">
+                                        <i class="bi bi-arrow-down-circle"></i>
+                                    </button>
+                                </form>
+                            <?php else: ?>
+                                <form method="post" action="/equipment/equip/<?= (int) $r['pi_id'] ?>" class="m-0">
+                                    <?= csrf_field() ?>
+                                    <button type="submit" class="btn btn-sm btn-dark"
+                                            <?= ! empty($r['discontinued']) ? 'disabled' : '' ?> title="Équiper">
+                                        <i class="bi bi-shield-check"></i>
+                                    </button>
+                                </form>
                             <?php endif ?>
 
-                            <div class="row g-2 small mb-2">
+                            <!-- Vendre au vendor PNJ : inline qty + bouton -->
+                            <?php if ($sellable): ?>
+                                <form method="post" action="/inventory/sell/<?= (int) $r['pi_id'] ?>" class="d-flex gap-1 m-0">
+                                    <?= csrf_field() ?>
+                                    <input type="number" name="quantity" min="1" max="<?= (int) $r['quantity'] ?>" value="1"
+                                           class="form-control form-control-sm font-monospace text-center" style="width: 3.5rem;"
+                                           title="Quantité à vendre">
+                                    <button type="submit" class="btn btn-sm btn-outline-dark" title="Vendre au vendor PNJ">
+                                        <i class="bi bi-cash"></i> <?= number_format($unitPay) ?>¢/u
+                                    </button>
+                                </form>
+                            <?php endif ?>
+
+                            <!-- Bazaar (toggle expanded) -->
+                            <?php if ($listable): ?>
+                                <button type="button" class="btn btn-sm btn-outline-dark" @click="sellOpen = !sellOpen"
+                                        title="Mettre sur le bazaar">
+                                    <i class="bi bi-cash-coin"></i>
+                                </button>
+                            <?php endif ?>
+                        </div>
+
+                        <!-- Form bazaar (inline expandable) -->
+                        <?php if ($listable): ?>
+                            <form x-show="sellOpen" x-cloak method="post" action="/bazaar/list"
+                                  class="row g-2 align-items-end px-3 pb-2 m-0 border-top bg-light pt-2">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="player_item_id" value="<?= (int) $r['pi_id'] ?>">
+                                <input type="hidden" name="return_to" value="/inventory">
+                                <div class="col-md-3">
+                                    <label class="form-label small mb-1">Quantité</label>
+                                    <input type="number" name="quantity" min="1" max="<?= (int) $r['quantity'] ?>" value="1"
+                                           required class="form-control form-control-sm font-monospace">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small mb-1">Prix unitaire (¢)</label>
+                                    <input type="number" name="unit_price" min="1" required
+                                           class="form-control form-control-sm font-monospace" placeholder="ex: 5000">
+                                </div>
+                                <div class="col-md-5 d-flex gap-2">
+                                    <button type="submit" class="btn btn-sm btn-dark">Lister sur bazaar</button>
+                                    <button type="button" class="btn btn-sm btn-light" @click="sellOpen = false">Annuler</button>
+                                </div>
+                            </form>
+                        <?php endif ?>
+
+                        <!-- Détail expandable -->
+                        <div x-show="open" x-cloak class="px-3 pb-3 pt-1 border-top bg-light small">
+                            <?php if (! empty($r['description'])): ?>
+                                <p class="text-muted fst-italic mb-2"><?= esc($r['description']) ?></p>
+                            <?php endif ?>
+                            <div class="row g-2">
                                 <?php if (! $isConsumable): ?>
                                     <div class="col-md-4"><span class="text-muted text-uppercase">Slot :</span> <?= esc(\App\Models\ItemModel::SLOTS[$r['slot']] ?? $r['slot']) ?></div>
                                     <div class="col-md-4"><span class="text-muted text-uppercase">Bonus :</span> <?= $bonusInline($r) ?></div>
                                 <?php else: ?>
                                     <div class="col-md-4"><span class="text-muted text-uppercase">Type :</span> <?= ucfirst($r['consumable_type']) ?></div>
                                     <div class="col-md-4"><span class="text-muted text-uppercase">Cooldown :</span> <?= intdiv((int) $r['cooldown_seconds'], 60) ?> min</div>
-                                    <div class="col-md-4"><span class="text-muted text-uppercase">Durée effet :</span> <?= (int) $r['effect_duration_seconds'] > 0 ? intdiv((int) $r['effect_duration_seconds'], 60) . ' min' : 'instant' ?></div>
+                                    <div class="col-md-4"><span class="text-muted text-uppercase">Durée :</span> <?= (int) $r['effect_duration_seconds'] > 0 ? intdiv((int) $r['effect_duration_seconds'], 60) . ' min' : 'instant' ?></div>
                                     <div class="col-md-12"><span class="text-muted text-uppercase">Effets :</span> <?= $effectsInline($r) ?></div>
                                     <?php if ($kind === 'drug'): ?>
-                                        <div class="col-md-6"><span class="text-muted text-uppercase">Risque overdose :</span> <?= (int) $r['overdose_chance_pct'] ?>%</div>
-                                        <div class="col-md-6"><span class="text-muted text-uppercase">Addiction +</span> <?= (int) $r['addiction_threshold_increase'] ?></div>
+                                        <div class="col-md-6"><span class="text-muted text-uppercase">Risque OD :</span> <?= (int) $r['overdose_chance_pct'] ?>%</div>
+                                        <div class="col-md-6"><span class="text-muted text-uppercase">Addiction + :</span> <?= (int) $r['addiction_threshold_increase'] ?></div>
                                     <?php endif ?>
                                 <?php endif ?>
-                            </div>
-
-                            <div class="d-flex gap-2 flex-wrap">
-                                <?php if ($isConsumable): ?>
-                                    <form method="post" action="/inventory/consume/<?= (int) $r['pi_id'] ?>" class="m-0">
-                                        <?= csrf_field() ?>
-                                        <button type="submit" class="btn btn-sm btn-dark"
-                                                <?= $cdRem > 0 || $hasActiveSameKind || ! empty($r['discontinued']) ? 'disabled' : '' ?>>
-                                            <?php if ($cdRem > 0): ?>
-                                                Cooldown <?= $formatRemaining($cdRem) ?>
-                                            <?php elseif ($hasActiveSameKind): ?>
-                                                Effet déjà actif
-                                            <?php else: ?>
-                                                Consommer
-                                            <?php endif ?>
-                                        </button>
-                                    </form>
-                                <?php elseif ($isEquipped): ?>
-                                    <form method="post" action="/equipment/unequip/<?= esc($r['slot']) ?>" class="m-0">
-                                        <?= csrf_field() ?>
-                                        <button type="submit" class="btn btn-sm btn-outline-dark">Déséquiper</button>
-                                    </form>
-                                <?php else: ?>
-                                    <form method="post" action="/equipment/equip/<?= (int) $r['pi_id'] ?>" class="m-0">
-                                        <?= csrf_field() ?>
-                                        <button type="submit" class="btn btn-sm btn-dark"
-                                                <?= ! empty($r['discontinued']) ? 'disabled' : '' ?>>
-                                            Équiper
-                                        </button>
-                                    </form>
+                                <?php if ($basePrice > 0): ?>
+                                    <div class="col-md-12 text-muted">
+                                        Prix vendor : <?= number_format($basePrice) ?>¢
+                                        · Rachat <?= (int) $buyback_pct ?>% : <?= number_format($unitPay) ?>¢/u
+                                    </div>
                                 <?php endif ?>
-                                <a href="/equipment" class="btn btn-sm btn-link text-muted text-decoration-none">voir slots</a>
                             </div>
                         </div>
                     </li>
