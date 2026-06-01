@@ -87,10 +87,18 @@ class TickCommand extends BaseCommand
         // Bots : font tourner leurs actions apres la regen pour qu'ils benefient des points fraichement gagnes.
         $botStats = (new BotService())->tickAll();
 
+        // Chat prune : garde les N dernieres par channel (configurable).
+        $keep = (int) $settings->get('chat_history_keep_per_channel', 500);
+        $chatModel = model(\App\Models\ChatMessageModel::class);
+        $chatPruned = 0;
+        foreach ($chatModel->listActiveChannels() as $ch) {
+            $chatPruned += $chatModel->pruneChannel($ch, $keep);
+        }
+
         $elapsed = round((microtime(true) - $start) * 1000, 1);
         CLI::write(
             sprintf(
-                '[%s] tick OK : energy +%d (%d), nerve +%d (%d), hp +%d (%d) | salaries %d | bots %d/%d acted %s — %sms',
+                '[%s] tick OK : energy +%d (%d), nerve +%d (%d), hp +%d (%d) | salaries %d | bots %d/%d acted %s | chat pruned %d — %sms',
                 date('H:i:s'),
                 self::ENERGY_REGEN_PER_TICK, $energyAffected,
                 self::NERVE_REGEN_PER_TICK,  $nerveAffected,
@@ -98,6 +106,7 @@ class TickCommand extends BaseCommand
                 $salaryAffected,
                 $botStats['acted'], $botStats['ticked'],
                 $botStats['by_action'] === [] ? '' : '(' . http_build_query($botStats['by_action'], '', ', ') . ')',
+                $chatPruned,
                 $elapsed,
             ),
             'green',

@@ -93,5 +93,9 @@
     </div>
 </footer>
 
+<?php if ($isLogged): ?>
+    <?= view('partials/chat_widget') ?>
+<?php endif ?>
+
 </body>
 </html>

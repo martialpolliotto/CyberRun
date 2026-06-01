@@ -54,10 +54,6 @@
                         <button type="submit" class="btn btn-outline-dark btn-sm" title="Attaquer">⚔ Attaquer</button>
                     </form>
                     <a href="/messages/thread/<?= $targetId ?>" class="btn btn-outline-dark btn-sm" title="Envoyer un message">✉ Msg</a>
-                    <form method="post" action="/chat/<?= $targetId ?>" class="m-0">
-                        <?= csrf_field() ?>
-                        <button type="submit" class="btn btn-outline-dark btn-sm" title="Chatter en direct">⌖ Chat</button>
-                    </form>
                     <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#modal-transfer" title="Envoyer des crédits">¢ Argent</button>
                     <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#modal-bounty" title="Placer une prime">☠ Prime</button>
                     <form method="post" action="/spy/<?= $targetId ?>" class="m-0">

@@ -62,8 +62,7 @@ $routes->group('', ['filter' => ['session', 'free']], static function ($routes) 
     $routes->get('messages/thread/(:num)',         'Messages::thread/$1');
     $routes->post('messages/send',                 'Messages::send');
 
-    // Stubs : chat live / espionnage (a brancher dans les phases suivantes).
-    $routes->post('chat/(:num)', 'Players::stubChat/$1');
+    // Stubs : espionnage (a brancher dans les phases suivantes).
     $routes->post('spy/(:num)',  'Players::stubSpy/$1');
 
     // Combat : start (depuis profil), view, turn, post-action (mug/hospitalize/leave).
@@ -84,6 +83,13 @@ $routes->group('', ['filter' => ['session', 'free']], static function ($routes) 
     $routes->get('crimes', 'Crimes::index');
     $routes->post('crimes/attempt/(:num)', 'Crimes::attempt/$1');
     $routes->get('crimes/(:segment)', 'Crimes::show/$1');
+
+    // Chat live (polling HTMX).
+    $routes->get('chat',                              'Chat::index');
+    $routes->get('chat/init/(:segment)',              'Chat::init/$1');
+    $routes->get('chat/poll/(:segment)/(:num)',       'Chat::poll/$1/$2');
+    $routes->post('chat/send',                        'Chat::send');
+    $routes->get('chat/(:segment)',                   'Chat::index/$1');
 
     // Bazaar joueur-a-joueur.
     $routes->get('bazaar/mine',                       'Bazaar::mine');
