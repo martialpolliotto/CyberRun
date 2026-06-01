@@ -71,13 +71,26 @@ class BazaarListingModel extends Model
         $db = db_connect();
         $db->transStart();
 
-        // Decremente le player_item (delete si quantity tombe a 0).
-        $newQty = (int) $pi['quantity'] - $quantity;
-        if ($newQty <= 0) {
-            $piModel->delete($playerItemId);
-        } else {
-            $piModel->update($playerItemId, ['quantity' => $newQty]);
+        // Decremente atomiquement le player_item (guard >= quantity).
+        // Sans ce guard, 2 listings paralleles sur le meme player_item dupliquent les items.
+        $piModel->builder()
+            ->where('id', $playerItemId)
+            ->where('player_id', $playerId)
+            ->where('equipped', 0)
+            ->where('quantity >=', $quantity)
+            ->update([
+                'quantity'   => new RawSql('quantity - ' . $quantity),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+        if ($db->affectedRows() === 0) {
+            $db->transRollback();
+            return ['ok' => false, 'message' => 'Item indisponible (quantite changee entre-temps).'];
         }
+        // Cleanup ligne a zero.
+        $piModel->builder()
+            ->where('id', $playerItemId)
+            ->where('quantity', 0)
+            ->delete();
 
         // Aggregation : si meme item + meme prix existe deja, incremente la quantity. Sinon insere.
         $existing = $this->where('seller_player_id', $playerId)
@@ -166,6 +179,20 @@ class BazaarListingModel extends Model
         $db = db_connect();
         $db->transStart();
 
+        // Decremente atomiquement la quantite du listing (guard >= quantity).
+        // C'est ce check-and-decrement qui empeche 2 acheteurs concurrents de vider le meme stock.
+        $this->builder()
+            ->where('id', $listingId)
+            ->where('quantity >=', $quantity)
+            ->update([
+                'quantity'   => new RawSql('quantity - ' . $quantity),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+        if ($db->affectedRows() === 0) {
+            $db->transRollback();
+            return ['ok' => false, 'message' => 'Stock insuffisant sur ce listing.'];
+        }
+
         // Debit acheteur (atomique).
         $playerModel->builder()
             ->where('id', $buyerId)
@@ -187,13 +214,11 @@ class BazaarListingModel extends Model
                 'updated_at' => date('Y-m-d H:i:s'),
             ]);
 
-        // Decremente la quantite du listing (delete si zero).
-        $remaining = (int) $listing['quantity'] - $quantity;
-        if ($remaining <= 0) {
-            $this->delete($listingId);
-        } else {
-            $this->update($listingId, ['quantity' => $remaining]);
-        }
+        // Cleanup : si le listing est vide, on le supprime.
+        $this->builder()
+            ->where('id', $listingId)
+            ->where('quantity', 0)
+            ->delete();
 
         // Ajoute items a l'acheteur.
         $this->returnQuantityToInventory($buyerId, (int) $listing['item_id'], $quantity);

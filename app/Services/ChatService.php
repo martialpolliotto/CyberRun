@@ -57,23 +57,34 @@ class ChatService
             }
         }
 
-        // Antiflood : 3 couches.
+        // Antiflood : 3 couches, serialisees par joueur via SELECT FOR UPDATE.
+        // Sans le lock, des requetes paralleles passent toutes le count=0 et inserent
+        // toutes (le check + l'insert ne sont pas atomiques en bdd).
         $msgModel = model(ChatMessageModel::class);
+        $db       = db_connect();
+
+        $db->transStart();
+
+        // Lock per-player : serialize les sends concurrents pour ce joueur jusqu'au commit.
+        $db->query('SELECT id FROM players WHERE id = ? FOR UPDATE', [$playerId]);
 
         $hard = (int) $settings->get('chat_rate_hard_seconds', 2);
         if ($hard > 0 && $msgModel->recentSendCount($playerId, $hard) > 0) {
+            $db->transRollback();
             return ['ok' => false, 'message' => 'Tu envoies trop vite. Attends ' . $hard . 's.'];
         }
 
         $burstCount = (int) $settings->get('chat_rate_burst_count', 5);
         $burstSecs  = (int) $settings->get('chat_rate_burst_seconds', 10);
         if ($burstCount > 0 && $burstSecs > 0 && $msgModel->recentSendCount($playerId, $burstSecs) >= $burstCount) {
+            $db->transRollback();
             return ['ok' => false, 'message' => 'Trop de messages en rafale. Attends un peu.'];
         }
 
         $softCount = (int) $settings->get('chat_rate_soft_count', 10);
         $softSecs  = (int) $settings->get('chat_rate_soft_seconds', 60);
         if ($softCount > 0 && $softSecs > 0 && $msgModel->recentSendCount($playerId, $softSecs) >= $softCount) {
+            $db->transRollback();
             return ['ok' => false, 'message' => 'Limite de ' . $softCount . ' messages/min atteinte.'];
         }
 
@@ -85,8 +96,11 @@ class ChatService
             'sender_player_id' => $playerId,
             'body'             => $body,
         ]);
+        $messageId = (int) $msgModel->getInsertID();
 
-        return ['ok' => true, 'message' => 'OK', 'message_id' => (int) $msgModel->getInsertID()];
+        $db->transComplete();
+
+        return ['ok' => true, 'message' => 'OK', 'message_id' => $messageId];
     }
 
     /** Verifie qu'un joueur peut poster sur ce channel. */

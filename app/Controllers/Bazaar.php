@@ -52,9 +52,7 @@ class Bazaar extends BaseController
             (int) $this->request->getPost('unit_price'),
         );
 
-        $back = (string) $this->request->getPost('return_to');
-        $back = $back !== '' ? $back : '/bazaar/mine';
-
+        $back = $this->safeReturnTo((string) $this->request->getPost('return_to'), '/bazaar/mine');
         return redirect()->to($back)->with($r['ok'] ? 'message' : 'error', $r['message']);
     }
 
@@ -71,10 +69,25 @@ class Bazaar extends BaseController
         $qty = max(1, (int) $this->request->getPost('quantity'));
         $r   = model(BazaarListingModel::class)->buy($listingId, (int) $me['id'], $qty);
 
-        $back = $this->request->getPost('return_to');
-        $back = is_string($back) && $back !== '' ? $back : '/players';
-
+        $back = $this->safeReturnTo((string) $this->request->getPost('return_to'), '/players');
         return redirect()->to($back)->with($r['ok'] ? 'message' : 'error', $r['message']);
+    }
+
+    /**
+     * Restreint return_to a un chemin interne ('/...' uniquement, pas '//' ni 'http://').
+     * Evite l'open-redirect : un attaquant pourrait sinon forger un formulaire qui renvoie
+     * l'utilisateur sur un site externe pour du phishing.
+     */
+    private function safeReturnTo(string $candidate, string $fallback): string
+    {
+        if ($candidate === '' || strlen($candidate) > 200) {
+            return $fallback;
+        }
+        // Doit commencer par '/' sans '//' (protocol-relative) ni '/\' (Windows-style bypass).
+        if ($candidate[0] !== '/' || str_starts_with($candidate, '//') || str_starts_with($candidate, '/\\')) {
+            return $fallback;
+        }
+        return $candidate;
     }
 
     private function requireMe(): array

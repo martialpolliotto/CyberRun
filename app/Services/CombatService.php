@@ -74,7 +74,12 @@ class CombatService
         if ((int) $attacker['nerve_current'] < $nerveCost) {
             return ['ok' => false, 'message' => 'Pas assez de nerve : ' . $nerveCost . ' requise pour engager le combat.'];
         }
-        $affected = $playerModel->builder()
+        // Transaction : debit nerve + insert combat sont 1 unite atomique.
+        // Sans ca, un crash sur l'insert combat perd la nerve sans rollback.
+        $db = db_connect();
+        $db->transStart();
+
+        $playerModel->builder()
             ->where('id', $attackerId)
             ->where('nerve_current >=', $nerveCost)
             ->update([
@@ -82,7 +87,8 @@ class CombatService
                 'last_combat_at' => $now->toDateTimeString(),
                 'updated_at'     => $now->toDateTimeString(),
             ]);
-        if (! $affected) {
+        if ($db->affectedRows() === 0) {
+            $db->transRollback();
             return ['ok' => false, 'message' => 'Nerve insuffisante au moment de l\'engagement.'];
         }
 
@@ -96,6 +102,11 @@ class CombatService
             'defender_hp_initial'    => (int) $defender['hp_current'],
             'current_turn_player_id' => $attackerId,
         ]);
+
+        $db->transComplete();
+        if (! $db->transStatus()) {
+            return ['ok' => false, 'message' => 'Erreur lors de l\'engagement du combat.'];
+        }
 
         return ['ok' => true, 'message' => 'Combat engage !', 'combat_id' => (int) $combatId];
     }
@@ -374,35 +385,55 @@ class CombatService
             return ['ok' => false, 'message' => 'Action invalide.'];
         }
 
-        $combat = model(CombatModel::class)->find($combatId);
-        if ($combat === null) {
-            return ['ok' => false, 'message' => 'Combat introuvable.'];
-        }
-        if ($combat['status'] === 'resolved') {
-            return ['ok' => false, 'message' => 'Combat deja resolu.'];
-        }
-        if ((int) $combat['winner_player_id'] !== $playerId) {
-            return ['ok' => false, 'message' => 'Tu n\'es pas le vainqueur.'];
+        $combatModel = model(CombatModel::class);
+        $playerModel = model(PlayerModel::class);
+        $db          = db_connect();
+
+        // Verrouille la ligne combat pour empecher 2 postActions concurrents (double mug).
+        $db->transStart();
+        $combatModel->builder()
+            ->where('id', $combatId)
+            ->where('winner_player_id', $playerId)
+            ->where('status !=', 'resolved')
+            ->update([
+                'post_action' => $action,
+                'status'      => 'resolved',
+                'updated_at'  => date('Y-m-d H:i:s'),
+            ]);
+        if ($db->affectedRows() === 0) {
+            $db->transRollback();
+            return ['ok' => false, 'message' => 'Combat introuvable, deja resolu ou tu n\'es pas le vainqueur.'];
         }
 
-        $playerModel = model(PlayerModel::class);
+        // Charge le combat (post-update) pour recuperer attacker/defender ids.
+        $combat = $combatModel->find($combatId);
         $loserId = (int) $combat['winner_player_id'] === (int) $combat['attacker_player_id']
             ? (int) $combat['defender_player_id']
             : (int) $combat['attacker_player_id'];
 
         $msg = '';
-        $update = ['post_action' => $action, 'status' => 'resolved'];
 
         if ($action === 'mug') {
-            $loser = $playerModel->find($loserId);
+            $loser  = $playerModel->find($loserId);
             $mugPct = (int) $this->settings()->get('combat_mug_pct', 20);
             $stolen = (int) floor((int) $loser['credits'] * $mugPct / 100);
             if ($stolen > 0) {
-                $playerModel->builder()->where('id', $loserId)
-                    ->update(['credits' => new RawSql('credits - ' . $stolen), 'updated_at' => date('Y-m-d H:i:s')]);
-                $playerModel->builder()->where('id', $playerId)
-                    ->update(['credits' => new RawSql('credits + ' . $stolen), 'updated_at' => date('Y-m-d H:i:s')]);
-                $update['mug_amount'] = $stolen;
+                // Debit atomique du perdant : guard `credits >= stolen` evite BIGINT UNSIGNED underflow
+                // si le perdant a depense des credits entre notre read et notre write.
+                $playerModel->builder()
+                    ->where('id', $loserId)
+                    ->where('credits >=', $stolen)
+                    ->update([
+                        'credits'    => new RawSql('credits - ' . $stolen),
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ]);
+                $actuallyStolen = $db->affectedRows() > 0 ? $stolen : 0;
+                if ($actuallyStolen > 0) {
+                    $playerModel->builder()->where('id', $playerId)
+                        ->update(['credits' => new RawSql('credits + ' . $actuallyStolen), 'updated_at' => date('Y-m-d H:i:s')]);
+                    $combatModel->update($combatId, ['mug_amount' => $actuallyStolen]);
+                }
+                $stolen = $actuallyStolen;
             }
             $msg = 'Tu as derobe ' . number_format($stolen) . ' credits.';
 
@@ -417,16 +448,24 @@ class CombatService
             ]);
             $msg = 'Tu envoies ta victime a la cyberclinique pour ' . $minutes . ' minutes.';
 
-            // Bounty claim : toutes les bounties actives sur le loser sont encaissees par le vainqueur.
-            $bounties = model(BountyModel::class)->where('target_player_id', $loserId)->where('status', 'active')->findAll();
+            // Bounty claim atomique : update WHERE status=active, lit affectedRows
+            // pour eviter double-payout si la bounty a ete claimee par un autre flux.
+            $bountyModel = model(BountyModel::class);
+            $bounties    = $bountyModel->where('target_player_id', $loserId)->where('status', 'active')->findAll();
             $totalBounty = 0;
             foreach ($bounties as $b) {
-                $totalBounty += (int) $b['amount'];
-                model(BountyModel::class)->update($b['id'], [
-                    'status'                => 'claimed',
-                    'claimed_by_player_id'  => $playerId,
-                    'claimed_at'            => Time::now()->toDateTimeString(),
-                ]);
+                $bountyModel->builder()
+                    ->where('id', (int) $b['id'])
+                    ->where('status', 'active')
+                    ->update([
+                        'status'                => 'claimed',
+                        'claimed_by_player_id'  => $playerId,
+                        'claimed_at'            => Time::now()->toDateTimeString(),
+                        'updated_at'            => date('Y-m-d H:i:s'),
+                    ]);
+                if ($db->affectedRows() > 0) {
+                    $totalBounty += (int) $b['amount'];
+                }
             }
             if ($totalBounty > 0) {
                 $playerModel->builder()->where('id', $playerId)
@@ -455,7 +494,7 @@ class CombatService
         }
         // 'leave' : rien d'autre.
 
-        model(CombatModel::class)->update($combatId, $update);
+        $db->transComplete();
         return ['ok' => true, 'message' => $msg ?: 'Combat termine, tu pars.'];
     }
 

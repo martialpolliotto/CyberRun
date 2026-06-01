@@ -112,6 +112,9 @@ class Inventory extends BaseController
         if ((int) $row['quantity'] < $quantity) {
             return redirect()->to('/inventory')->with('error', 'Tu n\'as pas autant d\'exemplaires.');
         }
+        if (! empty($row['discontinued'])) {
+            return redirect()->to('/inventory')->with('error', 'Item hors-circuit, le marchand ne le rachète pas.');
+        }
         if ((int) $row['price'] <= 0) {
             return redirect()->to('/inventory')->with('error', 'Cet item n\'a pas de prix : le marchand ne le rachète pas.');
         }
@@ -123,12 +126,25 @@ class Inventory extends BaseController
         $db = db_connect();
         $db->transStart();
 
-        $newQty = (int) $row['quantity'] - $quantity;
-        if ($newQty <= 0) {
-            $piModel->delete($playerItemId);
-        } else {
-            $piModel->update($playerItemId, ['quantity' => $newQty]);
+        // Decremente atomiquement player_items (guard >= quantity).
+        // Sans ce guard, double-clic ou tabs paralleles double-creditent le credit.
+        $piModel->builder()
+            ->where('id', $playerItemId)
+            ->where('player_id', (int) $player['id'])
+            ->where('equipped', 0)
+            ->where('quantity >=', $quantity)
+            ->update([
+                'quantity'   => new RawSql('quantity - ' . $quantity),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+        if ($db->affectedRows() === 0) {
+            $db->transRollback();
+            return redirect()->to('/inventory')->with('error', 'Vente annulee (quantite changee entre-temps).');
         }
+        $piModel->builder()
+            ->where('id', $playerItemId)
+            ->where('quantity', 0)
+            ->delete();
 
         model(PlayerModel::class)->builder()
             ->where('id', (int) $player['id'])

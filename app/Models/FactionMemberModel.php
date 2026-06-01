@@ -64,18 +64,36 @@ class FactionMemberModel extends Model
     }
 
     /**
-     * Retire un membre + decremente members_count. Atomique.
+     * Retire un membre + decremente members_count. Atomique, conditionne sur le DELETE
+     * qui doit effectivement avoir affecte une ligne (sinon concurrence kick/leave ferait
+     * deriver members_count et nullifierait un faction_id qui appartient deja a une autre faction).
      * Ne touche pas au leader : a check par le caller.
      */
     public function removeMember(int $factionId, int $playerId): void
     {
         $db = db_connect();
         $db->transStart();
-        $this->where('faction_id', $factionId)->where('player_id', $playerId)->delete();
-        model(PlayerModel::class)->update($playerId, [
-            'faction_id' => null,
-            'updated_at' => date('Y-m-d H:i:s'),
-        ]);
+
+        // Delete conditionnel : la suite ne se fait que si on a vraiment retire le membre.
+        $this->builder()
+            ->where('faction_id', $factionId)
+            ->where('player_id', $playerId)
+            ->delete();
+        if ($db->affectedRows() === 0) {
+            // Pas de membership a retirer : aucun effet sur players.faction_id ni members_count.
+            $db->transComplete();
+            return;
+        }
+
+        // Clear faction_id du joueur, mais seulement si elle pointe encore vers cette faction.
+        model(PlayerModel::class)->builder()
+            ->where('id', $playerId)
+            ->where('faction_id', $factionId)
+            ->update([
+                'faction_id' => null,
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+
         $db->table('factions')
             ->where('id', $factionId)
             ->where('members_count >', 0)

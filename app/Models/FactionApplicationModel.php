@@ -112,28 +112,42 @@ class FactionApplicationModel extends Model
             return ['ok' => false, 'message' => 'Faction complete.'];
         }
 
-        $candidate = model(PlayerModel::class)->find((int) $app['player_id']);
-        if ($candidate === null) {
+        $db = db_connect();
+        $db->transStart();
+
+        // Re-check candidate.faction_id INSIDE la transaction avec un row lock,
+        // pour empecher 2 leaders d'accepter le meme candidat dans 2 factions differentes.
+        $candidateLock = $db->query('SELECT id, faction_id FROM players WHERE id = ? FOR UPDATE', [(int) $app['player_id']])
+            ->getRowArray();
+        if ($candidateLock === null) {
+            $db->transRollback();
             return ['ok' => false, 'message' => 'Candidat introuvable.'];
         }
-        if (! empty($candidate['faction_id'])) {
-            // Le candidat a deja rejoint ailleurs entre-temps.
+        if (! empty($candidateLock['faction_id'])) {
+            // Le candidat a deja rejoint ailleurs entre la lecture du form et le commit.
             $this->update($applicationId, [
                 'status'               => 'cancelled',
                 'decided_by_player_id' => $leaderPlayerId,
                 'decided_at'           => date('Y-m-d H:i:s'),
             ]);
+            $db->transComplete();
             return ['ok' => false, 'message' => 'Le candidat a deja rejoint une autre faction.'];
         }
 
-        $db = db_connect();
-        $db->transStart();
-
-        $this->update($applicationId, [
-            'status'               => 'accepted',
-            'decided_by_player_id' => $leaderPlayerId,
-            'decided_at'           => date('Y-m-d H:i:s'),
-        ]);
+        // Idempotence du status pending : empeche d'accepter 2x la meme candidature.
+        $this->builder()
+            ->where('id', $applicationId)
+            ->where('status', 'pending')
+            ->update([
+                'status'               => 'accepted',
+                'decided_by_player_id' => $leaderPlayerId,
+                'decided_at'           => date('Y-m-d H:i:s'),
+                'updated_at'           => date('Y-m-d H:i:s'),
+            ]);
+        if ($db->affectedRows() === 0) {
+            $db->transRollback();
+            return ['ok' => false, 'message' => 'Candidature deja traitee entre-temps.'];
+        }
 
         model(FactionMemberModel::class)->addMember((int) $app['faction_id'], (int) $app['player_id'], 'member');
 
