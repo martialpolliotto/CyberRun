@@ -10,6 +10,10 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
     <script src="https://unpkg.com/htmx.org@2.0.3" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
+    <script>
+        // Applique la pref sidebar AVANT le rendu pour eviter le flash (FOUC).
+        (function(){ if (localStorage.getItem('crSidebarCollapsed') === '1') document.documentElement.classList.add('cr-sidebar-collapsed'); })();
+    </script>
     <style>
         [x-cloak] { display: none !important; }
         /* Le burger ne s'affiche que sur mobile (la sidebar est inline sur desktop via offcanvas-lg). */
@@ -32,6 +36,42 @@
            l'ancien resultat pour que le swap soit visible comme un changement. */
         .card:has(.cr-htmx-btn.htmx-request) .cr-flash-success,
         .card:has(.cr-htmx-btn.htmx-request) .cr-flash-danger { opacity: 0; transition: opacity 150ms; }
+
+        /* Jauges ressources style Torn : couleur par type + crans toutes les 10%.
+           Le track Bootstrap garde son bg gris, la barre remplie prend la couleur,
+           et un overlay ::after dessine les crans au-dessus des deux portions. */
+        .cr-bar-life      { background-color: #dc3545 !important; } /* rouge   */
+        .cr-bar-energy    { background-color: #198754 !important; } /* vert    */
+        .cr-bar-nerve     { background-color: #fd7e14 !important; } /* orange  */
+        .cr-bar-xp        { background-color: #0dcaf0 !important; } /* cyan    */
+        .cr-bar-addiction { background-color: #a52a2a !important; } /* brun    */
+        .cr-bar-mission   { background-color: #6c757d !important; } /* gris    */
+
+        .cr-bar-notched { position: relative; }
+        .cr-bar-notched::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: repeating-linear-gradient(
+                to right,
+                transparent 0,
+                transparent calc(10% - 1px),
+                rgba(0, 0, 0, 0.28) calc(10% - 1px),
+                rgba(0, 0, 0, 0.28) 10%
+            );
+            pointer-events: none;
+        }
+
+        /* Sidebar collapsable : toggle desktop only (sur mobile c'est deja offcanvas-lg).
+           Quand html.cr-sidebar-collapsed, la sidebar disparait du flex flow → main
+           prend toute la largeur (utile pour les pages denses : admin logs, etc.).
+           On cible <html> et non <body> pour pouvoir appliquer la classe AVANT le
+           rendu du body et eviter le FOUC. */
+        @media (min-width: 992px) {
+            html.cr-sidebar-collapsed .cr-sidebar-desktop { display: none !important; }
+        }
+        .cr-sidebar-toggle { background: none; border: none; padding: 0; }
+        .cr-sidebar-toggle:hover { color: #6c757d; }
     </style>
 </head>
 <body class="bg-white text-dark">
@@ -39,12 +79,20 @@
 <?php $isLogged = function_exists('auth') && auth()->loggedIn(); ?>
 
 <!-- Header minimal : logo + burger mobile + admin/logout -->
+<!-- max-width identique au layout principal pour que le contenu reste aligne sur les grands ecrans -->
 <header class="border-bottom bg-white sticky-top">
-    <div class="container-fluid d-flex align-items-center justify-content-between px-3 py-2">
+    <div class="mx-auto d-flex align-items-center justify-content-between px-3 py-2" style="max-width: 1380px;">
         <div class="d-flex align-items-center gap-3">
             <?php if ($isLogged): ?>
-                <button class="btn btn-link p-0 text-dark cr-burger" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar-offcanvas" aria-label="Menu">
+                <!-- Mobile : ouvre l'offcanvas-lg. Desktop : toggle collapse de la sidebar. -->
+                <button class="btn btn-link p-0 text-dark cr-burger" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar-offcanvas" aria-label="Menu (mobile)">
                     <i class="bi bi-list fs-4"></i>
+                </button>
+                <button class="d-none d-lg-inline-flex cr-sidebar-toggle text-dark"
+                        type="button" id="cr-sidebar-toggle-btn"
+                        aria-label="Masquer/afficher la sidebar"
+                        title="Masquer/afficher la sidebar">
+                    <i class="bi bi-layout-sidebar fs-4"></i>
                 </button>
             <?php endif ?>
             <a href="/" class="fs-5 fw-bold text-dark text-decoration-none">CyberRun</a>
@@ -93,6 +141,16 @@
 
 <?php if ($isLogged): ?>
     <?= view('partials/chat_widget') ?>
+    <script>
+        (function(){
+            const btn = document.getElementById('cr-sidebar-toggle-btn');
+            if (! btn) return;
+            btn.addEventListener('click', () => {
+                const collapsed = document.documentElement.classList.toggle('cr-sidebar-collapsed');
+                localStorage.setItem('crSidebarCollapsed', collapsed ? '1' : '0');
+            });
+        })();
+    </script>
 <?php endif ?>
 
 </body>

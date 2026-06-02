@@ -121,6 +121,14 @@
             </a>
         </div>
         <div class="col-md-6">
+            <a href="/admin/logs" class="card text-decoration-none text-dark h-100">
+                <div class="card-body">
+                    <div class="fw-bold text-uppercase">Logs d'activité (global)</div>
+                    <p class="small text-muted mb-0">Toute l'activité du jeu : crimes, combats, missions, transferts, etc. Filtres par pseudo / catégorie / période.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6">
             <div class="card h-100 text-muted">
                 <div class="card-body">
                     <div class="fw-bold text-uppercase">Gestion utilisateurs</div>

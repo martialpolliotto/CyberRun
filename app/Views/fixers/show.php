@@ -103,8 +103,8 @@
                         <span class="text-muted text-uppercase">Progression</span>
                         <span class="font-monospace"><?= $progress ?> / <?= $target ?></span>
                     </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-dark" style="width: <?= $pct ?>%"></div>
+                    <div class="progress cr-bar-notched" style="height: 8px;">
+                        <div class="progress-bar cr-bar-mission" style="width: <?= $pct ?>%"></div>
                     </div>
                 <?php elseif ($current['player_status'] === 'completed'): ?>
                     <?php if (! empty($current['outro'])): ?>

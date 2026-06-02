@@ -28,8 +28,8 @@
                     <span class="fw-bold">[ EN CYBERCLINIQUE ]</span>
                 <?php endif ?>
             </div>
-            <div class="progress" style="height: 4px;">
-                <div class="progress-bar bg-dark" style="width: <?= $xpPct ?>%"></div>
+            <div class="progress cr-bar-notched" style="height: 6px;">
+                <div class="progress-bar cr-bar-xp" style="width: <?= $xpPct ?>%"></div>
             </div>
         </div>
     </div>

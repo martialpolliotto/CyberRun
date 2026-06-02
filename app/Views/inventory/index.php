@@ -106,8 +106,8 @@
             <span class="small text-uppercase text-muted fw-semibold">Dépendance</span>
             <span class="font-monospace small"><?= $addiction ?> · <?= esc($tier['label']) ?></span>
         </div>
-        <div class="progress mt-1" style="height: 4px;">
-            <div class="progress-bar bg-dark" style="width: <?= min(100, $addiction) ?>%"></div>
+        <div class="progress cr-bar-notched mt-1" style="height: 6px;">
+            <div class="progress-bar cr-bar-addiction" style="width: <?= min(100, $addiction) ?>%"></div>
         </div>
     </div></div>
 
@@ -285,13 +285,20 @@
 </div>
 
 <script>
-[x-cloak] { display: none !important; }
 (function () {
+    // Countdown base sur l'horloge reelle (Date.now), pas sur les ticks setInterval :
+    // sinon le browser throttle les tabs en arriere-plan et le compteur derive.
     function fmt(s) { const m = Math.floor(s/60), r = s%60; return String(m).padStart(2,'0')+':'+String(r).padStart(2,'0'); }
     document.querySelectorAll('[data-effect-countdown]').forEach((el) => {
-        let left = parseInt(el.dataset.secondsLeft, 10);
-        const tick = () => { if (left <= 0) { window.location.reload(); return; } el.textContent = fmt(left); left--; };
-        tick(); setInterval(tick, 1000);
+        const initialLeft = parseInt(el.dataset.secondsLeft, 10);
+        const startMs = Date.now();
+        const tick = () => {
+            const left = initialLeft - Math.floor((Date.now() - startMs) / 1000);
+            if (left <= 0) { window.location.reload(); return; }
+            el.textContent = fmt(left);
+        };
+        tick();
+        setInterval(tick, 1000);
     });
 })();
 </script>

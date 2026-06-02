@@ -121,6 +121,8 @@ $routes->group('', ['filter' => ['session', 'free']], static function ($routes) 
 $routes->group('admin', ['filter' => ['session', 'group:admin'], 'namespace' => 'App\Controllers\Admin'], static function ($routes) {
     $routes->get('/', 'Dashboard::index');
 
+    $routes->get('logs', 'Logs::index');
+
     $routes->get('items',                  'Items::index');
     $routes->get('items/new',              'Items::new');
     $routes->post('items/save',            'Items::save');

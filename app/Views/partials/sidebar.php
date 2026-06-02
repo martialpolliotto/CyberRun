@@ -17,25 +17,11 @@ if ($player === null) {
 helper('number');
 $now = \CodeIgniter\I18n\Time::now();
 
-// Calcule les minutes restantes jusqu'au max (regen 1 NRV/min, 2 NRG/min, 5 Life/min via TickCommand).
-$timeUntilFull = static function (int $current, int $max, int $regenPerTick): string {
-    if ($current >= $max) return 'FULL';
-    if ($regenPerTick <= 0) return '';
-    $minutes = (int) ceil(($max - $current) / $regenPerTick);
-    if ($minutes < 60) return $minutes . 'm';
-    $h = intdiv($minutes, 60); $m = $minutes % 60;
-    return $h . 'h' . str_pad((string) $m, 2, '0', STR_PAD_LEFT);
-};
 
 $inJail     = ! empty($player['in_jail_until'])     && \CodeIgniter\I18n\Time::parse($player['in_jail_until'])->isAfter($now);
 $inHospital = ! empty($player['in_hospital_until']) && \CodeIgniter\I18n\Time::parse($player['in_hospital_until'])->isAfter($now);
 
-$hpPct  = (int) round(((int) $player['hp_current']     / max(1, (int) $player['hp_max']))     * 100);
-$nrgPct = (int) round(((int) $player['energy_current'] / max(1, (int) $player['energy_max'])) * 100);
-$nrvPct = (int) round(((int) $player['nerve_current']  / max(1, (int) $player['nerve_max']))  * 100);
-
 $xpToNext = (int) $player['level'] * 100;
-$xpPct    = (int) round(((int) $player['xp'] / max(1, $xpToNext)) * 100);
 
 $unreadMessages = model(\App\Models\MessageModel::class)->unreadCount((int) $player['id']);
 
@@ -46,6 +32,7 @@ $navItems = [
     ['Messages',    '/messages',     'bi-envelope',        $unreadMessages > 0 ? $unreadMessages : null],
     ['Log',         '/log',          'bi-clock-history',   null],
     ['Crimes',      '/crimes',       'bi-mask',            null],
+    ['Lab',         '/lab',          'bi-flask',           null],
     ['Chrome City', '/city',         'bi-building',        null],
     ['Jobs',        '/jobs',         'bi-briefcase',       null],
     ['Faction',     $factionsHref,   'bi-shield-fill',     null],
@@ -106,37 +93,8 @@ $navItems = [
             </div>
         </div>
 
-        <!-- Jauges ressources -->
-        <div class="small mb-3">
-            <?php
-                $bars = [
-                    ['Life',  (int) $player['hp_current'],     (int) $player['hp_max'],     $hpPct,  $timeUntilFull((int) $player['hp_current'],     (int) $player['hp_max'],     5)],
-                    ['NRG',   (int) $player['energy_current'], (int) $player['energy_max'], $nrgPct, $timeUntilFull((int) $player['energy_current'], (int) $player['energy_max'], 2)],
-                    ['NRV',   (int) $player['nerve_current'],  (int) $player['nerve_max'],  $nrvPct, $timeUntilFull((int) $player['nerve_current'],  (int) $player['nerve_max'],  1)],
-                ];
-                foreach ($bars as [$label, $cur, $max, $pct, $until]):
-            ?>
-                <div class="d-flex justify-content-between align-items-baseline">
-                    <span class="fw-semibold"><?= esc($label) ?></span>
-                    <span class="text-muted font-monospace"><?= number_format($cur) ?>/<?= number_format($max) ?></span>
-                </div>
-                <div class="progress mb-1" style="height: 4px;">
-                    <div class="progress-bar bg-dark" style="width: <?= $pct ?>%"></div>
-                </div>
-                <div class="text-end text-muted font-monospace small mb-2" style="margin-top: -3px;"><?= esc($until) ?></div>
-            <?php endforeach ?>
-        </div>
-
-        <!-- XP barre (sera cachee a terme — note en memoire) -->
-        <div class="small mb-3">
-            <div class="d-flex justify-content-between align-items-baseline">
-                <span class="fw-semibold">XP</span>
-                <span class="text-muted font-monospace"><?= number_format((int) $player['xp']) ?>/<?= number_format($xpToNext) ?></span>
-            </div>
-            <div class="progress" style="height: 4px;">
-                <div class="progress-bar bg-dark" style="width: <?= $xpPct ?>%"></div>
-            </div>
-        </div>
+        <!-- Jauges ressources : partial reutilise comme cible OOB pour les actions HTMX. -->
+        <?= view('partials/_resources', ['player' => $player, 'xpToNext' => $xpToNext]) ?>
 
         <!-- Navigation principale -->
         <nav class="mt-3 small">
@@ -171,3 +129,36 @@ $navItems = [
 
     </div>
 </aside>
+
+<script>
+(function () {
+    // Countdown live pour chaque jauge ressource. Idempotent + re-init apres swap HTMX
+    // (notamment OOB sur #cr-resources qui replace le DOM des jauges sans reload page).
+    const initTimer = (el) => {
+        if (el.dataset.crTimerInit === '1') return;
+        el.dataset.crTimerInit = '1';
+        const initialLeft = parseInt(el.dataset.secondsLeft, 10);
+        if (! initialLeft || initialLeft <= 0) { el.textContent = 'FULL'; return; }
+        const startMs = Date.now();
+        let intervalId;
+        const tick = () => {
+            const elapsed = Math.floor((Date.now() - startMs) / 1000);
+            const left = initialLeft - elapsed;
+            if (left <= 0) {
+                el.textContent = 'FULL';
+                clearInterval(intervalId);
+                return;
+            }
+            const m = Math.floor(left / 60), s = left % 60;
+            el.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        };
+        tick();
+        intervalId = setInterval(tick, 1000);
+    };
+
+    const initAll = () => document.querySelectorAll('[data-cr-resource-timer]').forEach(initTimer);
+
+    initAll();
+    document.body.addEventListener('htmx:afterSettle', initAll);
+})();
+</script>

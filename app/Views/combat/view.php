@@ -41,8 +41,8 @@
                         <span>Toi (<?= esc($me_username) ?>)</span>
                         <span class="font-monospace text-muted"><?= $myHp ?> / <?= $myMax ?></span>
                     </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-dark" style="width: <?= $myPct ?>%"></div>
+                    <div class="progress cr-bar-notched" style="height: 8px;">
+                        <div class="progress-bar cr-bar-life" style="width: <?= $myPct ?>%"></div>
                     </div>
                 </div>
             </div>
@@ -54,8 +54,8 @@
                         <span><a href="/u/<?= esc($opponent_username) ?>" class="text-dark text-decoration-none"><?= esc($opponent_username) ?></a></span>
                         <span class="font-monospace text-muted"><?= $oppHp ?> / <?= $oppMax ?></span>
                     </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-dark" style="width: <?= $oppPct ?>%"></div>
+                    <div class="progress cr-bar-notched" style="height: 8px;">
+                        <div class="progress-bar cr-bar-life" style="width: <?= $oppPct ?>%"></div>
                     </div>
                 </div>
             </div>

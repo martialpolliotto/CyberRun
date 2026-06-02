@@ -40,6 +40,46 @@ class Lab extends BaseController
         $result = $playerModel->train((int) $player['id'], $statSlug);
         // Note : PlayerModel::train pose deja le trackEvent + recheckThresholds (humains + bots).
 
+        // ---- Reponse HTMX : re-render le partial _content.php avec les valeurs a jour ----
+        if ($this->isHtmx()) {
+            $player = $playerModel->find((int) $player['id']);
+            $cost   = PlayerModel::TRAIN_ENERGY_COST;
+            $gain   = PlayerModel::TRAIN_STAT_GAIN;
+            $canTrain = (int) $player['energy_current'] >= $cost
+                && (empty($player['in_hospital_until'])
+                    || \CodeIgniter\I18n\Time::parse($player['in_hospital_until'])->isBefore(\CodeIgniter\I18n\Time::now()));
+
+            $contentHtml = view('lab/_content', [
+                'player'      => $player,
+                'cost'        => $cost,
+                'gain'        => $gain,
+                'statLabels'  => [
+                    'force'    => 'Force',
+                    'blindage' => 'Blindage',
+                    'reflexes' => 'Réflexes',
+                    'hack'     => 'Hack',
+                ],
+                'statColumns' => [
+                    'force'    => 'stat_force',
+                    'blindage' => 'stat_blindage',
+                    'reflexes' => 'stat_reflexes',
+                    'hack'     => 'stat_hack',
+                ],
+                'canTrain'      => $canTrain,
+                'flash_variant' => $result['ok'] ? 'success' : 'danger',
+                'flash_message' => $result['message'],
+            ]);
+
+            // OOB swap pour rafraichir les jauges sidebar (Energy debit).
+            $resourcesHtml = view('partials/_resources', [
+                'player'   => $player,
+                'xpToNext' => (int) $player['level'] * 100,
+                'oob'      => true,
+            ]);
+
+            return $contentHtml . $resourcesHtml;
+        }
+
         return redirect()->to('/lab')->with(
             $result['ok'] ? 'message' : 'error',
             $result['message'],

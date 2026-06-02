@@ -60,24 +60,19 @@ $last_attempted_outcome = $last_attempted_outcome ?? null;
                             <div>
                                 <?php if ($c['_unlocked']): ?>
                                     <?php
-                                        $disabled  = (int) $player['nerve_current'] < (int) $c['nerve_cost'];
-                                        $outcome   = $isLastAttempted ? ($last_attempted_outcome ?? '') : '';
-                                        $btnLabel  = $disabled ? 'Nerve insuffisante' : 'Tenter (−' . (int) $c['nerve_cost'] . ' NRV)';
+                                        $disabled = (int) $player['nerve_current'] < (int) $c['nerve_cost'];
+                                        $btnLabel = $disabled ? 'Nerve insuffisante' : 'Tenter (−' . (int) $c['nerve_cost'] . ' NRV)';
                                     ?>
                                     <button type="button"
                                             <?= $disabled ? 'disabled' : '' ?>
                                             class="btn btn-dark cr-htmx-btn"
-                                            x-data="{ outcome: <?= esc(json_encode($outcome), 'attr') ?>, init() { if (this.outcome) setTimeout(() => this.outcome = '', 1800); } }"
                                             hx-post="/crimes/attempt/<?= (int) $c['id'] ?>"
                                             hx-headers='{"X-CSRF-TOKEN":"<?= csrf_hash() ?>"}'
                                             hx-target="#crime-list"
                                             hx-swap="outerHTML"
-                                            hx-disabled-elt="this"
-                                            x-bind:disabled="outcome !== ''">
-                                        <span x-show="outcome === ''" class="cr-btn-text"><?= esc($btnLabel) ?></span>
+                                            hx-disabled-elt="this">
+                                        <span class="cr-btn-text"><?= esc($btnLabel) ?></span>
                                         <span class="cr-btn-spinner spinner-border spinner-border-sm" role="status"></span>
-                                        <i x-show="outcome === 'success'" x-cloak class="bi bi-check-circle-fill text-success"></i>
-                                        <i x-show="outcome === 'fail'"    x-cloak class="bi bi-x-circle-fill text-danger"></i>
                                     </button>
                                 <?php else: ?>
                                     <button type="button" class="btn btn-outline-secondary" disabled>Verrouillé</button>

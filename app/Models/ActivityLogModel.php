@@ -77,4 +77,53 @@ class ActivityLogModel extends Model
 
         return ['rows' => $rows, 'pager' => $this->pager];
     }
+
+    /**
+     * Liste paginee + filtres pour l'admin : TOUS les joueurs (vs listForPlayer).
+     * Filtre optionnel par username (auteur ou cible) via LIKE.
+     *
+     * @return array{rows: array<int, array<string,mixed>>, pager: ?\CodeIgniter\Pager\PagerInterface}
+     */
+    public function listAll(?string $category = null, ?string $period = null, ?string $username = null, int $perPage = 50): array
+    {
+        $b = $this->select('activity_logs.*,
+                            author_users.username  AS author_username,
+                            target_users.username  AS target_username')
+            ->join('players author',         'author.id        = activity_logs.player_id',         'left')
+            ->join('users   author_users',   'author_users.id  = author.user_id',                  'left')
+            ->join('players target',         'target.id        = activity_logs.target_player_id', 'left')
+            ->join('users   target_users',   'target_users.id  = target.user_id',                  'left')
+            ->orderBy('activity_logs.created_at', 'DESC')
+            ->orderBy('activity_logs.id', 'DESC');
+
+        if ($category !== null && isset(self::CATEGORIES[$category])) {
+            $b = $b->where('activity_logs.category', $category);
+        }
+
+        $boundary = self::periodBoundary($period);
+        if ($boundary !== null) {
+            $b = $b->where('activity_logs.created_at >=', $boundary);
+        }
+
+        if ($username !== null && $username !== '') {
+            $b = $b->groupStart()
+                ->like('author_users.username', $username)
+                ->orLike('target_users.username', $username)
+                ->groupEnd();
+        }
+
+        $rows = $b->paginate($perPage);
+
+        foreach ($rows as &$r) {
+            if (! empty($r['params']) && is_string($r['params'])) {
+                $decoded = json_decode($r['params'], true);
+                $r['_params'] = is_array($decoded) ? $decoded : [];
+            } else {
+                $r['_params'] = [];
+            }
+        }
+        unset($r);
+
+        return ['rows' => $rows, 'pager' => $this->pager];
+    }
 }

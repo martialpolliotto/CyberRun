@@ -53,17 +53,22 @@
 
 <script>
 (function () {
+    // Countdown base sur l'horloge reelle (Date.now), pas sur les ticks setInterval :
+    // sinon le browser throttle les tabs en arriere-plan et le compteur derive.
     const el = document.querySelector('[data-jail-countdown]');
     if (! el) return;
-    let left = parseInt(el.dataset.secondsLeft, 10);
+    const initialLeft = parseInt(el.dataset.secondsLeft, 10);
+    const startMs = Date.now();
     function tick() {
+        const elapsed = Math.floor((Date.now() - startMs) / 1000);
+        const left = initialLeft - elapsed;
         if (left <= 0) {
+            el.textContent = '00:00';
             window.location.reload();
             return;
         }
         const m = Math.floor(left / 60), s = left % 60;
         el.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-        left--;
     }
     tick();
     setInterval(tick, 1000);
