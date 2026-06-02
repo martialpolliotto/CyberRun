@@ -87,27 +87,14 @@ $navItems = [
             <?php endif ?>
         </div>
 
-        <!-- Identité + solde -->
-        <div class="small mb-3">
+        <!-- Identite : pseudo (statique) + bloc dynamique solde/niveau/streak en partial OOB-able -->
+        <div class="small mb-2">
             <div class="d-flex">
                 <span class="text-muted" style="width: 5rem;">Pseudo</span>
                 <a href="/profile" class="text-dark text-decoration-none fw-bold"><?= esc($user->username) ?></a>
             </div>
-            <div class="d-flex">
-                <span class="text-muted" style="width: 5rem;">Solde</span>
-                <span class="fw-bold font-monospace">¢<?= number_format((int) $player['credits']) ?></span>
-            </div>
-            <div class="d-flex">
-                <span class="text-muted" style="width: 5rem;">Niveau</span>
-                <span class="fw-bold font-monospace"><?= (int) $player['level'] ?></span>
-            </div>
-            <?php if ((int) $player['login_streak_days'] > 0): ?>
-                <div class="d-flex" title="Connexion <?= (int) $player['login_streak_days'] ?> jours d'affilée">
-                    <span class="text-muted" style="width: 5rem;">Streak</span>
-                    <span class="fw-bold font-monospace text-warning"><i class="bi bi-fire"></i> <?= (int) $player['login_streak_days'] ?> j</span>
-                </div>
-            <?php endif ?>
         </div>
+        <?= view('partials/_identity_stats', ['player' => $player]) ?>
 
         <!-- Jauges ressources : partial reutilise comme cible OOB pour les actions HTMX. -->
         <?= view('partials/_resources', ['player' => $player, 'xpToNext' => $xpToNext]) ?>

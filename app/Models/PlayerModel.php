@@ -537,37 +537,64 @@ class PlayerModel extends Model
     }
 
     /**
-     * Donne $amount XP au player. Si le total franchit le seuil level*100, level-up
-     * en cascade tant que le seuil est atteint (XP reportee sur le niveau suivant).
+     * Ajoute $amount XP au compteur. NE cascade PLUS les level-ups automatiquement :
+     * c'est au joueur d'aller sur /level-up pour appliquer le passage. XP peut donc
+     * depasser le seuil $level*100 et continuer a s'accumuler en attendant.
      */
     public function grantXp(int $playerId, int $amount): void
     {
-        if ($amount <= 0) {
-            return;
-        }
-        $player = $this->find($playerId);
-        if ($player === null) {
-            return;
+        if ($amount <= 0) return;
+        $this->builder()
+            ->where('id', $playerId)
+            ->update([
+                'xp'         => new \CodeIgniter\Database\RawSql('xp + ' . $amount),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+    }
+
+    /** True si le joueur a accumule assez d'XP pour passer au niveau suivant. */
+    public function canLevelUp(int $playerId): bool
+    {
+        $p = $this->find($playerId);
+        if ($p === null) return false;
+        return (int) $p['xp'] >= (int) $p['level'] * 100;
+    }
+
+    /**
+     * Applique UN level-up (le joueur peut en avoir plusieurs en stock, il devra
+     * cliquer plusieurs fois — exprime le choix conscient de monter chaque palier).
+     * Bonus : +N hp_max (game_setting level_up_hp_max_bonus), heal full a hp_max.
+     *
+     * @return array{ok: bool, message: string, new_level?: int, hp_bonus?: int}
+     */
+    public function levelUp(int $playerId): array
+    {
+        $p = $this->find($playerId);
+        if ($p === null) return ['ok' => false, 'message' => 'Joueur introuvable.'];
+
+        $threshold = (int) $p['level'] * 100;
+        if ((int) $p['xp'] < $threshold) {
+            return ['ok' => false, 'message' => 'Pas assez d\'XP pour passer au niveau ' . ((int) $p['level'] + 1) . '.'];
         }
 
-        $oldLevel = (int) $player['level'];
-        $level    = $oldLevel;
-        $xp       = (int) $player['xp'] + $amount;
-
-        while ($xp >= $level * 100) {
-            $xp -= $level * 100;
-            $level++;
-        }
+        $bonus     = (int) model(GameSettingModel::class)->get('level_up_hp_max_bonus', 10);
+        $newLevel  = (int) $p['level'] + 1;
+        $newXp     = (int) $p['xp'] - $threshold;
+        $newHpMax  = (int) $p['hp_max'] + $bonus;
 
         $this->update($playerId, [
-            'level' => $level,
-            'xp'    => $xp,
+            'level'      => $newLevel,
+            'xp'         => $newXp,
+            'hp_max'     => $newHpMax,
+            'hp_current' => $newHpMax, // heal full a chaque level-up applique
+            'updated_at' => date('Y-m-d H:i:s'),
         ]);
 
-        // Activity log : un evenement par level franchi (rare, donc on peut se permettre).
-        for ($l = $oldLevel + 1; $l <= $level; $l++) {
-            \App\Services\ActivityLogger::log($playerId, 'level', 'Log.level_up', ['level' => $l]);
-        }
+        \App\Services\ActivityLogger::log($playerId, 'level', 'Log.level_up', ['level' => $newLevel]);
+        // Mission tracking : reach_level/reach_stat se base sur la valeur courante.
+        model(MissionModel::class)->recheckThresholdsForPlayer($playerId);
+
+        return ['ok' => true, 'message' => 'Niveau ' . $newLevel . ' atteint. +' . $bonus . ' hp_max.', 'new_level' => $newLevel, 'hp_bonus' => $bonus];
     }
 
     /**

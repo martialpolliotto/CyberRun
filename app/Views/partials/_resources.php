@@ -20,7 +20,9 @@ $xp = (int) $player['xp'];
 $hpPct = (int) round(($hp / max(1, $hpMax)) * 100);
 $enPct = (int) round(($en / max(1, $enMax)) * 100);
 $nvPct = (int) round(($nv / max(1, $nvMax)) * 100);
-$xpPct = (int) round(($xp / max(1, $xpToNext)) * 100);
+// XP peut depasser le seuil (level-up choisi = non-cascade). On cape la barre a 100%
+// pour eviter overflow, le label "Niv N+1 dispo" est gere via le badge sidebar.
+$xpPct = min(100, (int) round(($xp / max(1, $xpToNext)) * 100));
 
 $secondsUntilFull = static function (int $current, int $max, int $regenPerTick): int {
     if ($current >= $max || $regenPerTick <= 0) return 0;

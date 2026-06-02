@@ -140,6 +140,7 @@
 </footer>
 
 <?php if ($isLogged): ?>
+    <?= view('partials/admin_bar') ?>
     <?= view('partials/chat_widget') ?>
     <script>
         (function(){

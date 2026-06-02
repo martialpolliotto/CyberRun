@@ -14,6 +14,10 @@ $routes->group('', ['filter' => 'session'], static function ($routes) {
     $routes->get('profile',         'Profile::index');
     $routes->get('profile/edit',    'Profile::edit');
     $routes->post('profile/save',   'Profile::save');
+
+    // Passage de niveau (choix explicite, pas de cascade automatique).
+    $routes->get('level-up',          'LevelUp::index');
+    $routes->post('level-up/perform', 'LevelUp::perform');
     $routes->get('jail', 'Jail::index');
     $routes->post('jail/escape', 'Jail::escape');
 
@@ -187,4 +191,5 @@ $routes->group('admin', ['filter' => ['session', 'group:admin'], 'namespace' => 
 
     $routes->get('player-tools',         'PlayerTools::index');
     $routes->post('player-tools/adjust', 'PlayerTools::adjust');
+    $routes->post('player-tools/state',  'PlayerTools::state');
 });

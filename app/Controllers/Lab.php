@@ -70,14 +70,8 @@ class Lab extends BaseController
                 'flash_message' => $result['message'],
             ]);
 
-            // OOB swap pour rafraichir les jauges sidebar (Energy debit).
-            $resourcesHtml = view('partials/_resources', [
-                'player'   => $player,
-                'xpToNext' => (int) $player['level'] * 100,
-                'oob'      => true,
-            ]);
-
-            return $contentHtml . $resourcesHtml;
+            // OOB swap : jauges + identite (solde / niveau / streak).
+            return $contentHtml . $this->htmxSidebarOOB((int) $player['id']);
         }
 
         return redirect()->to('/lab')->with(

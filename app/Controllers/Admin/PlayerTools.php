@@ -114,7 +114,65 @@ class PlayerTools extends BaseController
             'updated_at' => date('Y-m-d H:i:s'),
         ]);
 
+        // HTMX (barre admin flottante) : renvoie l'OOB swap des jauges + 204 vide
+        // pour que le bouton n'attende pas de contenu principal.
+        if ($this->request->getHeaderLine('HX-Request') === 'true') {
+            return $this->htmxRefreshResources((int) $me['id']);
+        }
+
         return redirect()->to('/admin/player-tools')
             ->with('message', $cfg['label'] . ' → ' . number_format($newValue));
+    }
+
+    /**
+     * Actions d'etat rapides depuis la barre admin : force_jail / force_hospital /
+     * free_jail / free_hospital (minutes en POST 'minutes' pour les force).
+     */
+    public function state()
+    {
+        $me = model(PlayerModel::class)->findByUserId((int) auth()->user()->id);
+        if ($me === null) {
+            return redirect()->to('/admin')->with('error', 'Fiche player introuvable.');
+        }
+
+        $action  = (string) $this->request->getPost('action');
+        $minutes = max(1, (int) $this->request->getPost('minutes'));
+        $now     = \CodeIgniter\I18n\Time::now();
+
+        $update = ['updated_at' => date('Y-m-d H:i:s')];
+        $label  = '';
+        switch ($action) {
+            case 'force_jail':
+                $update['in_jail_until'] = $now->addMinutes($minutes)->toDateTimeString();
+                $label = 'Prison ' . $minutes . ' min';
+                break;
+            case 'force_hospital':
+                $update['in_hospital_until'] = $now->addMinutes($minutes)->toDateTimeString();
+                $label = 'Cyberclinique ' . $minutes . ' min';
+                break;
+            case 'free_jail':
+                $update['in_jail_until'] = null;
+                $label = 'Libere de prison';
+                break;
+            case 'free_hospital':
+                $update['in_hospital_until'] = null;
+                $label = 'Sorti de cyberclinique';
+                break;
+            default:
+                return redirect()->to('/admin/player-tools')->with('error', 'Action invalide.');
+        }
+
+        model(PlayerModel::class)->update((int) $me['id'], $update);
+
+        if ($this->request->getHeaderLine('HX-Request') === 'true') {
+            return $this->htmxRefreshResources((int) $me['id']);
+        }
+        return redirect()->back()->with('message', $label);
+    }
+
+    /** Renvoie les OOB swaps sidebar (jauges + identite) pour la barre admin HTMX. */
+    private function htmxRefreshResources(int $playerId)
+    {
+        return $this->response->setBody($this->htmxSidebarOOB($playerId))->setStatusCode(200);
     }
 }

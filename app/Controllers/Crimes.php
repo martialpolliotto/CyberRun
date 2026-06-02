@@ -120,9 +120,9 @@ class Crimes extends BaseController
             }
             unset($c);
 
-            // Rendu : le partial crimes/_list pour la zone HTMX principale + le bloc
-            // ressources de la sidebar en OOB swap (hx-swap-oob="true") pour rafraichir
-            // Life/Energy/Nerve/Xp apres la consommation de nerve / les rewards.
+            // Rendu : le partial crimes/_list pour la zone HTMX principale + OOB swaps
+            // sidebar (jauges + bloc identite credits/niveau/streak) pour refleter
+            // la nerve consommee, les credits/xp gagnes, et eventuels level-up dispo.
             $listHtml = view('crimes/_list', [
                 'player'                 => $player,
                 'crimes'                 => $crimes,
@@ -131,12 +131,7 @@ class Crimes extends BaseController
                 'last_attempted_id'      => $crimeId,
                 'last_attempted_outcome' => $result['outcome'] ?? null,
             ]);
-            $resourcesHtml = view('partials/_resources', [
-                'player'   => $player,
-                'xpToNext' => (int) $player['level'] * 100,
-                'oob'      => true,
-            ]);
-            return $listHtml . $resourcesHtml;
+            return $listHtml . $this->htmxSidebarOOB((int) $player['id']);
         }
 
         // ---- Fallback non-HTMX : redirect classique ----

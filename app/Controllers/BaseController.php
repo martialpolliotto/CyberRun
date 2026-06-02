@@ -127,4 +127,27 @@ abstract class BaseController extends Controller
     {
         return resolve_username($playerId);
     }
+
+    /**
+     * HTML des partials sidebar dynamiques en OOB swap : jauges ressources +
+     * bloc identite (solde + niveau + streak). A concatener a la reponse HTMX
+     * d'une action qui modifie ces valeurs (crime / lab / sell / level-up / admin).
+     *
+     * Re-fetch le player pour avoir les valeurs fraiches post-update.
+     */
+    protected function htmxSidebarOOB(int $playerId): string
+    {
+        $player = model(\App\Models\PlayerModel::class)->find($playerId);
+        if ($player === null) return '';
+        $xpToNext = (int) $player['level'] * 100;
+        return view('partials/_resources', [
+                'player'   => $player,
+                'xpToNext' => $xpToNext,
+                'oob'      => true,
+            ])
+            . view('partials/_identity_stats', [
+                'player' => $player,
+                'oob'    => true,
+            ]);
+    }
 }
