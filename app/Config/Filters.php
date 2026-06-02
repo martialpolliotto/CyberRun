@@ -36,6 +36,8 @@ class Filters extends BaseFilters
         'performance'   => PerformanceMetrics::class,
         // Bloque les pages d'action quand le joueur est en prison/cyberclinique.
         'free'          => \App\Filters\FreeFilter::class,
+        // Rate limit générique : ['filter' => 'rate:action:N/S']
+        'rate'          => \App\Filters\RateLimit::class,
     ];
 
     /**
@@ -115,5 +117,14 @@ class Filters extends BaseFilters
      *
      * @var array<string, array<string, list<string>>>
      */
-    public array $filters = [];
+    public array $filters = [
+        // Rate limits sur les actions sensibles (anti-abus / scripting).
+        // Clef = filter:action:N/S → applique aux URLs du tableau before.
+        'rate:attack:30/3600'   => ['before' => ['attack/*']],
+        'rate:spy:30/3600'      => ['before' => ['spy/*']],
+        'rate:transfer:20/3600' => ['before' => ['transfer']],
+        'rate:bounty:10/3600'   => ['before' => ['bounties/place']],
+        'rate:msg:60/3600'      => ['before' => ['messages/send']],
+        // Chat send a deja son antiflood 3 couches en service-side, on n'en rajoute pas.
+    ];
 }
