@@ -82,7 +82,7 @@ $defaultChannel = $channels[0]['key'] ?? 'global';
 
     <!-- Toolbar bottom-right -->
     <div class="cr-chat-toolbar">
-        <button type="button" class="cr-chat-icon" @click="toggle()" title="Chat">
+        <button type="button" class="cr-chat-icon" @click="toggle()" title="Chat" data-tour="chat">
             <i class="bi bi-chat-dots-fill"></i>
             <span class="cr-chat-badge" x-show="unread && !open" x-cloak></span>
         </button>

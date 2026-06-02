@@ -36,22 +36,22 @@ $claimableDailies = (int) db_connect()->table('daily_assignments')
     ->countAllResults();
 
 $navItems = [
-    ['Profil',      '/profile',      'bi-person',          null],
-    ['Messages',    '/messages',     'bi-envelope',        $unreadMessages > 0 ? $unreadMessages : null],
-    ['Dailies',     '/dailies',      'bi-calendar-check',  $claimableDailies > 0 ? $claimableDailies : null],
-    ['Log',         '/log',          'bi-clock-history',   null],
-    ['Crimes',      '/crimes',       'bi-mask',            null],
-    ['Lab',         '/lab',          'bi-flask',           null],
-    ['Chrome City', '/city',         'bi-building',        null],
-    ['Jobs',        '/jobs',         'bi-briefcase',       null],
-    ['Faction',     $factionsHref,   'bi-shield-fill',     null],
-    ['Guerres',     '/factions/wars','bi-fire',            null],
-    ['Équipement',  '/equipment',    'bi-shield',          null],
-    ['Inventaire',  '/inventory',    'bi-bag',             null],
-    ['Bazaar',      '/bazaar/mine',  'bi-cash-coin',       null],
-    ['Joueurs',     '/players',      'bi-people',          null],
-    ['Classements', '/leaderboards', 'bi-trophy',          null],
-    ['Wiki',        '/wiki',         'bi-book',            null],
+    ['Profil',      '/profile',      'bi-person',          null,                                              'profile'],
+    ['Messages',    '/messages',     'bi-envelope',        $unreadMessages > 0 ? $unreadMessages : null,      null],
+    ['Dailies',     '/dailies',      'bi-calendar-check',  $claimableDailies > 0 ? $claimableDailies : null,  'dailies'],
+    ['Log',         '/log',          'bi-clock-history',   null,                                              null],
+    ['Crimes',      '/crimes',       'bi-mask',            null,                                              'crimes'],
+    ['Lab',         '/lab',          'bi-flask',           null,                                              'lab'],
+    ['Chrome City', '/city',         'bi-building',        null,                                              null],
+    ['Jobs',        '/jobs',         'bi-briefcase',       null,                                              'jobs'],
+    ['Faction',     $factionsHref,   'bi-shield-fill',     null,                                              'faction'],
+    ['Guerres',     '/factions/wars','bi-fire',            null,                                              null],
+    ['Équipement',  '/equipment',    'bi-shield',          null,                                              null],
+    ['Inventaire',  '/inventory',    'bi-bag',             null,                                              null],
+    ['Bazaar',      '/bazaar/mine',  'bi-cash-coin',       null,                                              'bazaar'],
+    ['Joueurs',     '/players',      'bi-people',          null,                                              null],
+    ['Classements', '/leaderboards', 'bi-trophy',          null,                                              null],
+    ['Wiki',        '/wiki',         'bi-book',            null,                                              'wiki'],
 ];
 ?>
 <aside class="cr-sidebar bg-white border-end" style="width: 280px; flex-shrink: 0;">
@@ -102,9 +102,11 @@ $navItems = [
         <!-- Navigation principale -->
         <nav class="mt-3 small">
             <ul class="list-unstyled mb-0">
-                <?php foreach ($navItems as [$label, $href, $icon, $badge]): ?>
+                <?php foreach ($navItems as $nav): ?>
+                    <?php [$label, $href, $icon, $badge, $tour] = array_pad($nav, 5, null); ?>
                     <li>
-                        <a href="<?= esc($href) ?>" class="d-flex align-items-center gap-2 py-1 text-dark text-decoration-none">
+                        <a href="<?= esc($href) ?>" class="d-flex align-items-center gap-2 py-1 text-dark text-decoration-none"
+                           <?= $tour ? 'data-tour="' . esc($tour, 'attr') . '"' : '' ?>>
                             <i class="bi <?= esc($icon) ?>" style="width: 1.2rem;"></i>
                             <span class="flex-grow-1"><?= esc($label) ?></span>
                             <?php if ($badge !== null): ?>

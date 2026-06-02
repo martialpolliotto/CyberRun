@@ -20,7 +20,13 @@
     <div class="card mb-3">
         <div class="card-header bg-light small text-uppercase fw-semibold d-flex justify-content-between">
             <span>Profil</span>
-            <a href="/profile/edit" class="text-decoration-none text-muted small">Personnaliser</a>
+            <span class="d-flex gap-3">
+                <button type="button" class="btn btn-link p-0 text-decoration-none text-muted small"
+                        onclick="localStorage.removeItem('crTutorialDone'); window.location.reload();">
+                    Refaire le tutoriel
+                </button>
+                <a href="/profile/edit" class="text-decoration-none text-muted small">Personnaliser</a>
+            </span>
         </div>
         <div class="card-body">
             <div class="d-flex align-items-start gap-3 mb-2">

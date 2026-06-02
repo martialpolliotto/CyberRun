@@ -142,6 +142,7 @@
 <?php if ($isLogged): ?>
     <?= view('partials/admin_bar') ?>
     <?= view('partials/chat_widget') ?>
+    <?= view('partials/tutorial') ?>
     <script>
         (function(){
             const btn = document.getElementById('cr-sidebar-toggle-btn');
