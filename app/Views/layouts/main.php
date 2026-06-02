@@ -143,6 +143,7 @@
     <?= view('partials/admin_bar') ?>
     <?= view('partials/chat_widget') ?>
     <?= view('partials/tutorial') ?>
+    <?= view('partials/notifications') ?>
     <script>
         (function(){
             const btn = document.getElementById('cr-sidebar-toggle-btn');

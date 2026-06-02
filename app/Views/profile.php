@@ -21,6 +21,9 @@
         <div class="card-header bg-light small text-uppercase fw-semibold d-flex justify-content-between">
             <span>Profil</span>
             <span class="d-flex gap-3">
+                <button type="button" id="cr-notif-toggle" class="btn btn-link p-0 text-decoration-none text-muted small">
+                    <i class="bi bi-bell"></i> <span id="cr-notif-toggle-label">Activer notifs</span>
+                </button>
                 <button type="button" class="btn btn-link p-0 text-decoration-none text-muted small"
                         onclick="localStorage.removeItem('crTutorialDone'); window.location.reload();">
                     Refaire le tutoriel
@@ -139,5 +142,54 @@
     <?php endif ?>
 
 </div>
+
+<script>
+(function () {
+    const btn = document.getElementById('cr-notif-toggle');
+    const lbl = document.getElementById('cr-notif-toggle-label');
+    if (! btn || typeof Notification === 'undefined') {
+        if (btn) btn.style.display = 'none';
+        return;
+    }
+
+    function render() {
+        const enabled = localStorage.getItem('crNotifEnabled') === '1' && Notification.permission === 'granted';
+        if (enabled) {
+            lbl.textContent = 'Notifications activées ✓';
+            btn.classList.add('text-success');
+        } else if (Notification.permission === 'denied') {
+            lbl.textContent = 'Notifs bloquées (autorise dans le navigateur)';
+            btn.classList.add('text-muted');
+        } else {
+            lbl.textContent = 'Activer notifs';
+        }
+    }
+    render();
+
+    btn.addEventListener('click', async () => {
+        if (Notification.permission === 'granted') {
+            // Toggle desactivation cote app (la permission browser reste granted).
+            const wasEnabled = localStorage.getItem('crNotifEnabled') === '1';
+            localStorage.setItem('crNotifEnabled', wasEnabled ? '0' : '1');
+            render();
+            if (! wasEnabled) location.reload(); // active le polling JS de notifications.php
+            return;
+        }
+        if (Notification.permission === 'denied') {
+            alert('Les notifications sont bloquées au niveau navigateur. Autorise-les dans les paramètres de site pour ce domaine.');
+            return;
+        }
+        const perm = await Notification.requestPermission();
+        if (perm === 'granted') {
+            localStorage.setItem('crNotifEnabled', '1');
+            new Notification('Notifications activées', { body: 'Tu seras alerté pour les messages et les attaques.' });
+            render();
+            location.reload();
+        } else {
+            render();
+        }
+    });
+})();
+</script>
 
 <?= $this->endSection() ?>

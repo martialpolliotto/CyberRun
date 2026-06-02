@@ -18,6 +18,10 @@ $routes->group('', ['filter' => 'session'], static function ($routes) {
     // Passage de niveau (choix explicite, pas de cascade automatique).
     $routes->get('level-up',          'LevelUp::index');
     $routes->post('level-up/perform', 'LevelUp::perform');
+
+    // Notifications navigateur : polling JSON.
+    $routes->get('notifications/poll', 'Notifications::poll');
+
     $routes->get('jail', 'Jail::index');
     $routes->post('jail/escape', 'Jail::escape');
 
