@@ -477,9 +477,30 @@ class CombatService
             // Hook faction : respect gagne si l'attaquant est membre.
             $attacker = $playerModel->find($playerId);
             if ($attacker !== null && ! empty($attacker['faction_id'])) {
-                $gain = (int) $this->settings()->get('faction_respect_per_hospitalize', 5);
+                $gain    = (int) $this->settings()->get('faction_respect_per_hospitalize', 5);
+                $loser   = $playerModel->find($loserId);
+                $atkFac  = (int) $attacker['faction_id'];
+                $tgtFac  = $loser !== null ? (int) ($loser['faction_id'] ?? 0) : 0;
+
+                // Hook guerre : si l'attaque ciblait un membre de la faction adverse en
+                // guerre active, +1 score pour notre cote et respect multiplie.
+                if ($tgtFac > 0 && $tgtFac !== $atkFac) {
+                    $warModel = model(\App\Models\FactionWarModel::class);
+                    $warModel->incrementScoreForHospitalize($atkFac, $tgtFac);
+                    // Check si une guerre active existe pour appliquer le multiplier.
+                    $activeWar = $warModel->where('status', 'active')
+                        ->groupStart()
+                            ->groupStart()->where('faction_a_id', $atkFac)->where('faction_b_id', $tgtFac)->groupEnd()
+                            ->orGroupStart()->where('faction_a_id', $tgtFac)->where('faction_b_id', $atkFac)->groupEnd()
+                        ->groupEnd()
+                        ->first();
+                    if ($activeWar !== null) {
+                        $gain *= (int) $this->settings()->get('war_respect_multiplier', 2);
+                    }
+                }
+
                 if ($gain > 0) {
-                    model(\App\Models\FactionModel::class)->addRespect((int) $attacker['faction_id'], $playerId, $gain);
+                    model(\App\Models\FactionModel::class)->addRespect($atkFac, $playerId, $gain);
                 }
             }
         }

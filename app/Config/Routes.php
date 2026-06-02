@@ -113,6 +113,10 @@ $routes->group('', ['filter' => ['session', 'free']], static function ($routes) 
     $routes->get('factions/create',                              'Factions::createForm');
     $routes->post('factions/create',                             'Factions::create');
     $routes->get('factions/mine',                                'Factions::mine');
+    $routes->get('factions/wars',                                'Factions::wars');
+    $routes->post('factions/mine/wars/declare',                  'Factions::declareWar');
+    $routes->post('factions/mine/wars/(:num)/accept',            'Factions::acceptWar/$1');
+    $routes->post('factions/mine/wars/(:num)/reject',            'Factions::rejectWar/$1');
     $routes->post('factions/mine/leave',                         'Factions::leave');
     $routes->post('factions/mine/donate',                        'Factions::donate');
     $routes->post('factions/applications/mine/cancel',           'Factions::cancelMyApplication');

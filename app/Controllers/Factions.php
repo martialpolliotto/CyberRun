@@ -119,12 +119,86 @@ class Factions extends BaseController
             return redirect()->to('/factions')->with('error', 'Faction introuvable.');
         }
         $isLeader = (int) $faction['leader_player_id'] === (int) $me['id'];
+
+        $warModel = model(\App\Models\FactionWarModel::class);
+        $currentWar = $warModel->activeForFaction($factionId);
+        // Si je suis leader et c'est une declaration pending recue, je peux accept/reject.
+        $isWarAccepter = $currentWar !== null
+            && $currentWar['status'] === 'pending'
+            && (int) $currentWar['faction_b_id'] === $factionId
+            && $isLeader;
+
+        // Pour la declare form : liste des factions adverses possibles (pas la mienne, pas deja en guerre).
+        $declareCandidates = [];
+        if ($isLeader && $currentWar === null) {
+            $rows = model(FactionModel::class)->listAll(200);
+            foreach ($rows as $f) {
+                if ((int) $f['id'] === $factionId) continue;
+                if ($warModel->activeForFaction((int) $f['id']) !== null) continue;
+                $declareCandidates[] = $f;
+            }
+        }
+
+        $settings = model(GameSettingModel::class);
+
         return view('factions/mine', [
-            'me'           => $me,
-            'faction'      => $faction,
-            'members'      => model(FactionMemberModel::class)->listForFaction($factionId),
-            'applications' => $isLeader ? model(FactionApplicationModel::class)->listPendingForFaction($factionId) : [],
-            'is_leader'    => $isLeader,
+            'me'                  => $me,
+            'faction'             => $faction,
+            'members'             => model(FactionMemberModel::class)->listForFaction($factionId),
+            'applications'        => $isLeader ? model(FactionApplicationModel::class)->listPendingForFaction($factionId) : [],
+            'is_leader'           => $isLeader,
+            'current_war'         => $currentWar,
+            'is_war_accepter'     => $isWarAccepter,
+            'declare_candidates'  => $declareCandidates,
+            'war_stake'           => (int) $settings->get('war_stake_credits', 100000),
+            'war_score_cap'       => (int) $settings->get('war_score_cap', 100),
+            'war_duration_hours'  => (int) $settings->get('war_duration_hours', 168),
+            'war_other_faction'   => $currentWar !== null
+                ? model(FactionModel::class)->find(
+                    (int) $currentWar['faction_a_id'] === $factionId
+                        ? (int) $currentWar['faction_b_id']
+                        : (int) $currentWar['faction_a_id']
+                )
+                : null,
+        ]);
+    }
+
+    /** POST : declare la guerre. Seul le leader peut. */
+    public function declareWar()
+    {
+        $me = $this->requireMe();
+        if (empty($me['faction_id'])) {
+            return redirect()->to('/factions')->with('error', 'Tu n\'es dans aucune faction.');
+        }
+        $targetFactionId = (int) $this->request->getPost('target_faction_id');
+        $r = model(\App\Models\FactionWarModel::class)->declare(
+            (int) $me['faction_id'], $targetFactionId, (int) $me['id'],
+        );
+        return redirect()->to('/factions/mine')->with($r['ok'] ? 'message' : 'error', $r['message']);
+    }
+
+    /** POST : accepte la guerre pending recue. */
+    public function acceptWar(int $warId)
+    {
+        $me = $this->requireMe();
+        $r  = model(\App\Models\FactionWarModel::class)->accept($warId, (int) $me['id']);
+        return redirect()->to('/factions/mine')->with($r['ok'] ? 'message' : 'error', $r['message']);
+    }
+
+    /** POST : refuse la guerre pending recue. */
+    public function rejectWar(int $warId)
+    {
+        $me = $this->requireMe();
+        $r  = model(\App\Models\FactionWarModel::class)->reject($warId, (int) $me['id']);
+        return redirect()->to('/factions/mine')->with($r['ok'] ? 'message' : 'error', $r['message']);
+    }
+
+    /** Page publique : liste des guerres actives + recently ended. */
+    public function wars()
+    {
+        return view('factions/wars', [
+            'me'   => $this->me(),
+            'wars' => model(\App\Models\FactionWarModel::class)->listVisible(50),
         ]);
     }
 

@@ -105,10 +105,13 @@ class TickCommand extends BaseCommand
             $chatPruned += $chatModel->pruneChannel($ch, $keep);
         }
 
+        // Faction wars : end les guerres au score_cap ou ends_at expire + auto-cancel pending expirees.
+        $warsEnded = model(\App\Models\FactionWarModel::class)->endExpiredOrCapped();
+
         $elapsed = round((microtime(true) - $start) * 1000, 1);
         CLI::write(
             sprintf(
-                '[%s] tick OK : energy +%d (%d), nerve +%d (%d), hp +%d (%d) | salaries %d | bots %d/%d acted %s | chat pruned %d — %sms',
+                '[%s] tick OK : energy +%d (%d), nerve +%d (%d), hp +%d (%d) | salaries %d | bots %d/%d acted %s | chat pruned %d | wars ended %d — %sms',
                 date('H:i:s'),
                 self::ENERGY_REGEN_PER_TICK, $energyAffected,
                 self::NERVE_REGEN_PER_TICK,  $nerveAffected,
@@ -117,6 +120,7 @@ class TickCommand extends BaseCommand
                 $botStats['acted'], $botStats['ticked'],
                 $botStats['by_action'] === [] ? '' : '(' . http_build_query($botStats['by_action'], '', ', ') . ')',
                 $chatPruned,
+                $warsEnded,
                 $elapsed,
             ),
             'green',

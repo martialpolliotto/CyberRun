@@ -58,6 +58,80 @@
         </div>
     </div>
 
+    <!-- Guerre faction -->
+    <?php if ($current_war !== null): ?>
+        <?php
+            $isFactionA = (int) $current_war['faction_a_id'] === (int) $faction['id'];
+            $myScore    = $isFactionA ? (int) $current_war['score_a'] : (int) $current_war['score_b'];
+            $oppScore   = $isFactionA ? (int) $current_war['score_b'] : (int) $current_war['score_a'];
+            $oppName    = $war_other_faction !== null ? $war_other_faction['name'] : 'Adversaire';
+            $oppTag     = $war_other_faction !== null ? $war_other_faction['tag']  : '';
+        ?>
+        <div class="card mb-3 border-dark">
+            <div class="card-header bg-dark text-white small text-uppercase fw-semibold d-flex justify-content-between">
+                <span><i class="bi bi-fire"></i> Guerre
+                    <?= $current_war['status'] === 'pending' ? '(en attente)' : '(active)' ?>
+                </span>
+                <span>vs <strong><?= esc($oppName) ?></strong> <span class="text-muted">[<?= esc($oppTag) ?>]</span></span>
+            </div>
+            <div class="card-body">
+                <?php if ($current_war['status'] === 'active'): ?>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <div class="text-muted small text-uppercase">Notre score (hospitalisations)</div>
+                            <div class="fs-2 fw-bold"><?= $myScore ?> <span class="text-muted small">/ <?= (int) $war_score_cap ?></span></div>
+                        </div>
+                        <div class="col-6 text-end">
+                            <div class="text-muted small text-uppercase">Score adverse</div>
+                            <div class="fs-2 fw-bold"><?= $oppScore ?></div>
+                        </div>
+                    </div>
+                    <p class="small text-muted mb-0">
+                        Pot : <strong><?= number_format((int) $current_war['stake_a'] + (int) $current_war['stake_b']) ?>¢</strong>
+                        · Fin prévue : <strong><?= esc(substr((string) $current_war['ends_at'], 0, 16)) ?></strong>
+                        · Si score-cap atteint avant : fin anticipée.
+                    </p>
+                <?php elseif ($current_war['status'] === 'pending' && $is_war_accepter): ?>
+                    <p class="mb-2"><?= esc($oppName) ?> nous déclare la guerre. Mise : <strong><?= number_format((int) $current_war['stake_a']) ?>¢</strong> de chaque côté, durée max <?= (int) $war_duration_hours ?>h.</p>
+                    <div class="d-flex gap-2">
+                        <form method="post" action="/factions/mine/wars/<?= (int) $current_war['id'] ?>/accept" class="m-0"
+                              onsubmit="return confirm('Accepter la guerre ? Mise <?= number_format((int) $current_war['stake_a']) ?>¢ débitée de la trésorerie.');">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="btn btn-dark">Accepter</button>
+                        </form>
+                        <form method="post" action="/factions/mine/wars/<?= (int) $current_war['id'] ?>/reject" class="m-0">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="btn btn-outline-dark">Refuser</button>
+                        </form>
+                    </div>
+                <?php elseif ($current_war['status'] === 'pending'): ?>
+                    <p class="small mb-0">En attente de réponse de <?= esc($oppName) ?> (mise <?= number_format((int) $current_war['stake_a']) ?>¢ déjà débitée de notre trésorerie).</p>
+                <?php endif ?>
+            </div>
+        </div>
+    <?php elseif ($is_leader && ! empty($declare_candidates)): ?>
+        <div class="card mb-3">
+            <div class="card-header bg-light small text-uppercase fw-semibold">Déclarer une guerre</div>
+            <div class="card-body">
+                <p class="small text-muted mb-2">Mise <?= number_format((int) $war_stake) ?>¢ de chaque côté, durée max <?= (int) $war_duration_hours ?>h, fin anticipée à <?= (int) $war_score_cap ?> hospitalisations.</p>
+                <form method="post" action="/factions/mine/wars/declare" class="d-flex gap-2 align-items-end"
+                      onsubmit="return confirm('Déclarer la guerre ? <?= number_format((int) $war_stake) ?>¢ débités immédiatement de la trésorerie.');">
+                    <?= csrf_field() ?>
+                    <div class="flex-grow-1">
+                        <label class="form-label small">Faction cible</label>
+                        <select name="target_faction_id" class="form-select" required>
+                            <option value="">— choisir —</option>
+                            <?php foreach ($declare_candidates as $f): ?>
+                                <option value="<?= (int) $f['id'] ?>"><?= esc($f['name']) ?> [<?= esc($f['tag']) ?>]</option>
+                            <?php endforeach ?>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-dark">Déclarer</button>
+                </form>
+            </div>
+        </div>
+    <?php endif ?>
+
     <?php if ($is_leader): ?>
         <div class="card mb-3">
             <div class="card-header bg-light small text-uppercase fw-semibold d-flex justify-content-between">

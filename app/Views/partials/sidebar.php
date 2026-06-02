@@ -45,6 +45,7 @@ $navItems = [
     ['Chrome City', '/city',         'bi-building',        null],
     ['Jobs',        '/jobs',         'bi-briefcase',       null],
     ['Faction',     $factionsHref,   'bi-shield-fill',     null],
+    ['Guerres',     '/factions/wars','bi-fire',            null],
     ['Équipement',  '/equipment',    'bi-shield',          null],
     ['Inventaire',  '/inventory',    'bi-bag',             null],
     ['Bazaar',      '/bazaar/mine',  'bi-cash-coin',       null],
