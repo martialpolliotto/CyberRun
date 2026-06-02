@@ -39,6 +39,13 @@ $claimableDailies = (int) db_connect()->table('daily_assignments')
 $onlineThreshold = (int) model(\App\Models\GameSettingModel::class)->get('online_threshold_seconds', 300);
 $onlineFriends   = model(\App\Models\PlayerRelationModel::class)->countOnlineFriends((int) $player['id'], $onlineThreshold);
 
+// Banque : depots matured prets a retirer (badge sidebar Banque).
+$maturedDeposits = (int) db_connect()->table('bank_deposits')
+    ->where('player_id', (int) $player['id'])
+    ->where('withdrawn_at', null)
+    ->where('matures_at <=', date('Y-m-d H:i:s'))
+    ->countAllResults();
+
 $navItems = [
     ['Profil',      '/profile',      'bi-person',          null,                                              'profile'],
     ['Messages',    '/messages',     'bi-envelope',        $unreadMessages > 0 ? $unreadMessages : null,      null],
@@ -53,6 +60,7 @@ $navItems = [
     ['Équipement',  '/equipment',    'bi-shield',          null,                                              null],
     ['Inventaire',  '/inventory',    'bi-bag',             null,                                              null],
     ['Bazaar',      '/bazaar/mine',  'bi-cash-coin',       null,                                              'bazaar'],
+    ['Banque',      '/bank',         'bi-bank',            $maturedDeposits > 0 ? $maturedDeposits : null,    null],
     ['Joueurs',     '/players',      'bi-people',          null,                                              null],
     ['Relations',   '/relations',    'bi-person-heart',    $onlineFriends > 0 ? $onlineFriends : null,        null],
     ['Classements', '/leaderboards', 'bi-trophy',          null,                                              null],

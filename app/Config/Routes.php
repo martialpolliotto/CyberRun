@@ -25,6 +25,11 @@ $routes->group('', ['filter' => 'session'], static function ($routes) {
     // Trophees / achievements.
     $routes->get('achievements', 'Achievements::index');
 
+    // Banque : depots a terme avec interets.
+    $routes->get('bank',                              'Bank::index');
+    $routes->post('bank/deposit',                     'Bank::deposit');
+    $routes->post('bank/deposits/(:num)/withdraw',    'Bank::withdraw/$1');
+
     $routes->get('jail', 'Jail::index');
     $routes->post('jail/escape', 'Jail::escape');
 
