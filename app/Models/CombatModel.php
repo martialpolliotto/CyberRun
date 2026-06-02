@@ -32,4 +32,28 @@ class CombatModel extends Model
             ->orderBy('id', 'DESC')
             ->first();
     }
+
+    /**
+     * Combats finis ou j'etais defenseur, par ordre antechronologique.
+     * Sert a la card 'Tes derniers attaquants' sur le profil = revenge list.
+     *
+     * @return array<int, array{
+     *   id:int, ended_at:string, status:string, post_action:?string, mug_amount:int,
+     *   attacker_player_id:int, attacker_username:string
+     * }>
+     */
+    public function recentAttacksOn(int $playerId, int $limit = 10): array
+    {
+        return $this->select('combats.id, combats.ended_at, combats.status,
+                              combats.post_action, combats.mug_amount, combats.attacker_player_id,
+                              users.username AS attacker_username')
+            ->join('players',  'players.id = combats.attacker_player_id', 'inner')
+            ->join('users',    'users.id = players.user_id', 'inner')
+            ->where('combats.defender_player_id', $playerId)
+            ->where('combats.status !=', 'ongoing')
+            ->orderBy('combats.ended_at', 'DESC')
+            ->orderBy('combats.id', 'DESC')
+            ->limit($limit)
+            ->findAll();
+    }
 }

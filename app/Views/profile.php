@@ -86,12 +86,57 @@
     </div>
 
     <!-- Crédits -->
-    <div class="card">
+    <div class="card mb-3">
         <div class="card-body d-flex justify-content-between align-items-center">
             <span class="small text-uppercase text-muted fw-semibold">Solde</span>
             <span class="fs-4 fw-bold">¢<?= number_format($player['credits']) ?></span>
         </div>
     </div>
+
+    <!-- Derniers attaquants : revenge list -->
+    <?php if (! empty($recent_attacks)): ?>
+        <div class="card">
+            <div class="card-header bg-light small text-uppercase fw-semibold d-flex justify-content-between">
+                <span>Tes derniers attaquants</span>
+                <span class="text-muted"><?= count($recent_attacks) ?></span>
+            </div>
+            <ul class="list-group list-group-flush small">
+                <?php foreach ($recent_attacks as $a):
+                    // L'attaquant a "won" si le combat ended_attacker_won OR (status='resolved' AND winner=attacker).
+                    $attackerWon = in_array($a['status'], ['ended_attacker_won', 'resolved'], true);
+                    // post_action determine ce qu'il a fait apres avoir gagne.
+                    $outcomeLabel = 'duel';
+                    $outcomeClass = 'text-muted';
+                    if ($a['post_action'] === 'hospitalize') {
+                        $outcomeLabel = 'hospitalisé';
+                        $outcomeClass = 'text-danger';
+                    } elseif ($a['post_action'] === 'mug') {
+                        $outcomeLabel = 'volé ' . number_format((int) $a['mug_amount']) . '¢';
+                        $outcomeClass = 'text-danger';
+                    } elseif ($a['post_action'] === 'leave') {
+                        $outcomeLabel = 'parti';
+                    } elseif (in_array($a['status'], ['ended_attacker_fled', 'ended_defender_fled'], true)) {
+                        $outcomeLabel = 'fuite';
+                    } elseif ($a['status'] === 'ended_defender_won') {
+                        $outcomeLabel = 'tu l\'as battu';
+                        $outcomeClass = 'text-success';
+                    }
+                ?>
+                    <li class="list-group-item d-flex justify-content-between align-items-center gap-3">
+                        <div class="flex-grow-1">
+                            <a href="/u/<?= esc($a['attacker_username']) ?>" class="text-dark fw-semibold text-decoration-none"><?= esc($a['attacker_username']) ?></a>
+                            <span class="<?= $outcomeClass ?>">— <?= esc($outcomeLabel) ?></span>
+                            <div class="text-muted font-monospace"><?= esc(relative_short($a['ended_at'])) ?> · combat #<?= (int) $a['id'] ?></div>
+                        </div>
+                        <form method="post" action="/attack/<?= (int) $a['attacker_player_id'] ?>" class="m-0">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="btn btn-sm btn-outline-dark" title="Attaquer en retour">⚔ Revanche</button>
+                        </form>
+                    </li>
+                <?php endforeach ?>
+            </ul>
+        </div>
+    <?php endif ?>
 
 </div>
 

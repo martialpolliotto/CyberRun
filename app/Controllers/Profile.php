@@ -27,10 +27,11 @@ class Profile extends BaseController
         model(MissionModel::class)->trackEvent((int) $player['id'], 'visit_page', 'profile');
 
         return view('profile', [
-            'user'     => $user,
-            'player'   => $player,
-            'xpToNext' => $player['level'] * 100,
-            'stats'    => $playerModel->getEffectiveStats((int) $player['id']),
+            'user'           => $user,
+            'player'         => $player,
+            'xpToNext'       => $player['level'] * 100,
+            'stats'          => $playerModel->getEffectiveStats((int) $player['id']),
+            'recent_attacks' => model(\App\Models\CombatModel::class)->recentAttacksOn((int) $player['id'], 10),
         ]);
     }
 
