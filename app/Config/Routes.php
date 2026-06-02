@@ -11,7 +11,9 @@ service('auth')->routes($routes);
 
 // Routes toujours accessibles (en prison ou a la cyberclinique).
 $routes->group('', ['filter' => 'session'], static function ($routes) {
-    $routes->get('profile', 'Profile::index');
+    $routes->get('profile',         'Profile::index');
+    $routes->get('profile/edit',    'Profile::edit');
+    $routes->post('profile/save',   'Profile::save');
     $routes->get('jail', 'Jail::index');
     $routes->post('jail/escape', 'Jail::escape');
 

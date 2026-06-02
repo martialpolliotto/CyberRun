@@ -35,15 +35,30 @@
     <div class="card mb-3">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
-                <div>
-                    <h1 class="h3 mb-1"><?= esc($profile['username']) ?></h1>
-                    <p class="text-muted small mb-0">
-                        Niveau <strong><?= (int) $profile['level'] ?></strong> ·
-                        inscrit le <?= esc(\CodeIgniter\I18n\Time::parse($profile['joined_at'])->toLocalizedString('d MMMM yyyy')) ?>
-                    </p>
+                <div class="d-flex align-items-start gap-3">
+                    <?php if (! empty($profile['avatar_path'])): ?>
+                        <img src="<?= esc($profile['avatar_path']) ?>" alt="avatar"
+                             class="rounded border" style="width: 72px; height: 72px; object-fit: cover; flex-shrink: 0;">
+                    <?php endif ?>
+                    <div>
+                        <h1 class="h3 mb-1"><?= esc($profile['username']) ?></h1>
+                        <?php if (! empty($profile['signature'])): ?>
+                            <p class="text-muted fst-italic small mb-1"><?= esc($profile['signature']) ?></p>
+                        <?php endif ?>
+                        <p class="text-muted small mb-0">
+                            Niveau <strong><?= (int) $profile['level'] ?></strong> ·
+                            inscrit le <?= esc(\CodeIgniter\I18n\Time::parse($profile['joined_at'])->toLocalizedString('d MMMM yyyy')) ?>
+                        </p>
+                    </div>
                 </div>
                 <div class="text-end"><?= $statusBadge((string) $profile['_status']) ?></div>
             </div>
+
+            <?php if (! empty($profile['bio'])): ?>
+                <div class="small p-2 bg-light border rounded mb-3" style="white-space: pre-wrap; word-wrap: break-word;">
+                    <?= esc($profile['bio']) ?>
+                </div>
+            <?php endif ?>
 
             <?php if (! $isSelf && $me !== null): ?>
                 <!-- Barre d'actions PvP / sociales -->

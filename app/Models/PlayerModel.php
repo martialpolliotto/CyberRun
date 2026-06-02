@@ -55,6 +55,9 @@ class PlayerModel extends Model
         'last_login_at',
         'last_streak_reward',
         'chat_muted_until',
+        'bio',
+        'signature',
+        'avatar_path',
     ];
 
     /** Couts et probas de l'evasion solo depuis la prison. */
