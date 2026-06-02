@@ -45,6 +45,7 @@ $navItems = [
     ['Profil',      '/profile',      'bi-person',          null],
     ['Messages',    '/messages',     'bi-envelope',        $unreadMessages > 0 ? $unreadMessages : null],
     ['Log',         '/log',          'bi-clock-history',   null],
+    ['Crimes',      '/crimes',       'bi-mask',            null],
     ['Chrome City', '/city',         'bi-building',        null],
     ['Jobs',        '/jobs',         'bi-briefcase',       null],
     ['Faction',     $factionsHref,   'bi-shield-fill',     null],
