@@ -61,7 +61,8 @@ $routes->group('', ['filter' => ['session', 'free']], static function ($routes) 
     $routes->post('bust/(:num)', 'Players::bust/$1');
     $routes->post('bail/(:num)', 'Players::bail/$1');
 
-    // Social : relations (toggle ami/ennemi/cible), bounties, transferts d'argent.
+    // Social : relations (liste + toggle ami/ennemi/cible), bounties, transferts d'argent.
+    $routes->get('relations',                    'Relations::index');
     $routes->post('relations/(:segment)/(:num)', 'Relations::toggle/$1/$2');
     $routes->get('bounties',                     'Bounties::index');
     $routes->post('bounties/place',              'Bounties::place');

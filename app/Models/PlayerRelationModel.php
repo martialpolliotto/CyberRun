@@ -51,18 +51,42 @@ class PlayerRelationModel extends Model
     }
 
     /**
-     * Toutes les relations d'un joueur indexees par type.
+     * Toutes les relations d'un joueur indexees par type. Inclut un statut derive :
+     *  - 'jail' si in_jail_until > NOW
+     *  - 'hospital' si in_hospital_until > NOW
+     *  - 'online' si last_seen_at > NOW - threshold
+     *  - 'offline' sinon
      *
      * @return array{friend: array<int, array>, enemy: array<int, array>, target: array<int, array>}
      */
-    public function listForPlayerGrouped(int $playerId): array
+    public function listForPlayerGrouped(int $playerId, int $onlineThresholdSeconds = 300): array
     {
-        $rows = $this->select('player_relations.*, users.username AS target_username, players.level AS target_level')
+        $rows = $this->select('player_relations.*,
+                               users.username AS target_username,
+                               players.level AS target_level,
+                               players.last_seen_at,
+                               players.in_jail_until,
+                               players.in_hospital_until')
             ->join('players', 'players.id = player_relations.target_player_id', 'inner')
             ->join('users',   'users.id = players.user_id', 'inner')
             ->where('player_relations.player_id', $playerId)
             ->orderBy('users.username')
             ->findAll();
+
+        $now = \CodeIgniter\I18n\Time::now();
+        foreach ($rows as &$r) {
+            if (! empty($r['in_jail_until']) && \CodeIgniter\I18n\Time::parse($r['in_jail_until'])->isAfter($now)) {
+                $r['_status'] = 'jail';
+            } elseif (! empty($r['in_hospital_until']) && \CodeIgniter\I18n\Time::parse($r['in_hospital_until'])->isAfter($now)) {
+                $r['_status'] = 'hospital';
+            } elseif (! empty($r['last_seen_at']) && $now->getTimestamp() - \CodeIgniter\I18n\Time::parse($r['last_seen_at'])->getTimestamp() < $onlineThresholdSeconds) {
+                $r['_status'] = 'online';
+            } else {
+                $r['_status'] = 'offline';
+            }
+        }
+        unset($r);
+
         $out = ['friend' => [], 'enemy' => [], 'target' => []];
         foreach ($rows as $r) {
             $type = (string) $r['relation_type'];
@@ -71,5 +95,17 @@ class PlayerRelationModel extends Model
             }
         }
         return $out;
+    }
+
+    /** Compte les amis online (pour le badge sidebar). */
+    public function countOnlineFriends(int $playerId, int $onlineThresholdSeconds = 300): int
+    {
+        $now = date('Y-m-d H:i:s', time() - $onlineThresholdSeconds);
+        return $this->select('player_relations.id')
+            ->join('players', 'players.id = player_relations.target_player_id', 'inner')
+            ->where('player_relations.player_id', $playerId)
+            ->where('player_relations.relation_type', 'friend')
+            ->where('players.last_seen_at >', $now)
+            ->countAllResults();
     }
 }

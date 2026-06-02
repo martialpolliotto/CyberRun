@@ -8,6 +8,21 @@ use App\Services\ActivityLogger;
 
 class Relations extends BaseController
 {
+    /** Liste 3-onglets de mes relations avec statut online/jail/hospital. */
+    public function index()
+    {
+        $me = model(PlayerModel::class)->findByUserId((int) auth()->user()->id);
+        if ($me === null) {
+            return redirect()->to('/')->with('error', 'Fiche player introuvable.');
+        }
+        $threshold = (int) model(\App\Models\GameSettingModel::class)->get('online_threshold_seconds', 300);
+        return view('relations/index', [
+            'me'         => $me,
+            'grouped'    => model(PlayerRelationModel::class)->listForPlayerGrouped((int) $me['id'], $threshold),
+            'threshold'  => $threshold,
+        ]);
+    }
+
     /** Toggle ami/ennemi/cible sur un joueur. */
     public function toggle(string $type, int $targetPlayerId)
     {

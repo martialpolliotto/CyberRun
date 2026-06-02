@@ -41,6 +41,24 @@ abstract class BaseController extends Controller
 
         // Daily login streak : credite le reward au 1er hit du jour. No-op les autres requetes.
         $this->maybeTrackDailyLogin();
+
+        // Online status : touch last_seen_at une fois par minute (throttle SQL-side).
+        $this->touchLastSeen();
+    }
+
+    /**
+     * UPDATE players SET last_seen_at = NOW() WHERE id = ? AND (NULL OR < NOW() - 60s).
+     * Throttle automatique cote SQL pour eviter le write a chaque page load.
+     */
+    private function touchLastSeen(): void
+    {
+        if (! function_exists('auth') || ! auth()->loggedIn()) return;
+        $me = $this->me();
+        if ($me === null || (int) ($me['is_bot'] ?? 0) === 1) return;
+        db_connect()->query(
+            'UPDATE players SET last_seen_at = NOW() WHERE id = ? AND (last_seen_at IS NULL OR last_seen_at < NOW() - INTERVAL 60 SECOND)',
+            [(int) $me['id']],
+        );
     }
 
     /**

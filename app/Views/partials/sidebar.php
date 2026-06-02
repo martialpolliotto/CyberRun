@@ -35,6 +35,10 @@ $claimableDailies = (int) db_connect()->table('daily_assignments')
     ->where('claimed_at IS NULL',       null, false)
     ->countAllResults();
 
+// Amis online (badge sidebar Relations).
+$onlineThreshold = (int) model(\App\Models\GameSettingModel::class)->get('online_threshold_seconds', 300);
+$onlineFriends   = model(\App\Models\PlayerRelationModel::class)->countOnlineFriends((int) $player['id'], $onlineThreshold);
+
 $navItems = [
     ['Profil',      '/profile',      'bi-person',          null,                                              'profile'],
     ['Messages',    '/messages',     'bi-envelope',        $unreadMessages > 0 ? $unreadMessages : null,      null],
@@ -50,6 +54,7 @@ $navItems = [
     ['Inventaire',  '/inventory',    'bi-bag',             null,                                              null],
     ['Bazaar',      '/bazaar/mine',  'bi-cash-coin',       null,                                              'bazaar'],
     ['Joueurs',     '/players',      'bi-people',          null,                                              null],
+    ['Relations',   '/relations',    'bi-person-heart',    $onlineFriends > 0 ? $onlineFriends : null,        null],
     ['Classements', '/leaderboards', 'bi-trophy',          null,                                              null],
     ['Wiki',        '/wiki',         'bi-book',            null,                                              'wiki'],
 ];

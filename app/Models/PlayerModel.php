@@ -58,6 +58,7 @@ class PlayerModel extends Model
         'bio',
         'signature',
         'avatar_path',
+        'last_seen_at',
     ];
 
     /** Couts et probas de l'evasion solo depuis la prison. */
