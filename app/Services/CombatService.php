@@ -474,6 +474,12 @@ class CombatService
             ActivityLogger::log($playerId, 'social', 'Log.combat_hospitalize',
                 ['target' => $this->resolveUsername($loserId), 'minutes' => $minutes], $loserId, $combatId);
 
+            // Hook achievements + dailies : 1 combat_hospitalize.
+            model(\App\Models\MissionModel::class)->trackEvent($playerId, 'combat_hospitalize', '*');
+            if ($totalBounty > 0) {
+                model(\App\Models\MissionModel::class)->trackEvent($playerId, 'bounty_claimed', '*');
+            }
+
             // Hook faction : respect gagne si l'attaquant est membre.
             $attacker = $playerModel->find($playerId);
             if ($attacker !== null && ! empty($attacker['faction_id'])) {

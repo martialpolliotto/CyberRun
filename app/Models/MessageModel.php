@@ -50,7 +50,12 @@ class MessageModel extends Model
             'body'                => $body,
         ]);
 
-        return ['ok' => true, 'message' => 'Message envoye.', 'message_id' => (int) $this->getInsertID()];
+        $msgId = (int) $this->getInsertID();
+
+        // Hook achievements/dailies.
+        model(MissionModel::class)->trackEvent($senderId, 'message_sent', '*');
+
+        return ['ok' => true, 'message' => 'Message envoye.', 'message_id' => $msgId];
     }
 
     /**

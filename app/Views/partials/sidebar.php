@@ -56,6 +56,7 @@ $navItems = [
     ['Joueurs',     '/players',      'bi-people',          null,                                              null],
     ['Relations',   '/relations',    'bi-person-heart',    $onlineFriends > 0 ? $onlineFriends : null,        null],
     ['Classements', '/leaderboards', 'bi-trophy',          null,                                              null],
+    ['Trophées',    '/achievements', 'bi-award',           null,                                              null],
     ['Wiki',        '/wiki',         'bi-book',            null,                                              'wiki'],
 ];
 ?>

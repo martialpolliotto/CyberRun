@@ -22,6 +22,9 @@ $routes->group('', ['filter' => 'session'], static function ($routes) {
     // Notifications navigateur : polling JSON.
     $routes->get('notifications/poll', 'Notifications::poll');
 
+    // Trophees / achievements.
+    $routes->get('achievements', 'Achievements::index');
+
     $routes->get('jail', 'Jail::index');
     $routes->post('jail/escape', 'Jail::escape');
 

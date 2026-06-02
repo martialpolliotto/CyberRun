@@ -50,6 +50,11 @@ class Relations extends BaseController
             'type'   => PlayerRelationModel::RELATION_TYPES[$type] ?? $type,
         ], $targetPlayerId);
 
+        // Hook achievements (only on 'added' pour eviter farming via toggle loop).
+        if ($result === 'added' && $type === 'friend') {
+            model(\App\Models\MissionModel::class)->trackEvent((int) $me['id'], 'relation_friend_added', '*');
+        }
+
         return redirect()->to('/u/' . $targetUsername)->with('message', $msg);
     }
 

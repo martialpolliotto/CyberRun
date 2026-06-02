@@ -215,6 +215,9 @@ class MissionModel extends Model
 
         // Hook dailies : meme event, en parallele des missions principales.
         (new \App\Services\DailyService())->trackEvent($playerId, $eventType, $target);
+
+        // Hook achievements : meme event, broadcast.
+        (new \App\Services\AchievementService())->trackEvent($playerId, $eventType, $target);
     }
 
     /**

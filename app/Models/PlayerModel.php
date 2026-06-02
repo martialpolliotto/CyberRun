@@ -474,6 +474,9 @@ class PlayerModel extends Model
 
         $db->transComplete();
 
+        // Hook achievements/dailies.
+        model(MissionModel::class)->trackEvent($spyId, 'spy_done', '*');
+
         return [
             'ok'       => true,
             'message'  => 'Stats revelees (cout : ' . $nerveCost . ' nerve).',
@@ -594,6 +597,8 @@ class PlayerModel extends Model
         \App\Services\ActivityLogger::log($playerId, 'level', 'Log.level_up', ['level' => $newLevel]);
         // Mission tracking : reach_level/reach_stat se base sur la valeur courante.
         model(MissionModel::class)->recheckThresholdsForPlayer($playerId);
+        // Hook achievements/dailies : level_up event.
+        model(MissionModel::class)->trackEvent($playerId, 'level_up', '*');
 
         return ['ok' => true, 'message' => 'Niveau ' . $newLevel . ' atteint. +' . $bonus . ' hp_max.', 'new_level' => $newLevel, 'hp_bonus' => $bonus];
     }
@@ -1058,6 +1063,9 @@ class PlayerModel extends Model
             ['target' => $targetUsername, 'amount' => $amount], $targetPlayerId);
         \App\Services\ActivityLogger::log($targetPlayerId, 'eco', 'Log.transfer_received',
             ['author' => $authorUsername, 'amount' => $amount], $playerId);
+
+        // Hook achievements/dailies.
+        model(MissionModel::class)->trackEvent($playerId, 'transfer_sent', '*');
 
         return ['ok' => true, 'message' => $amount . ' credits envoyes a ' . esc($targetUsername) . '.'];
     }
