@@ -7,6 +7,10 @@ use CodeIgniter\Router\RouteCollection;
  */
 $routes->get('/', 'Home::index');
 
+// Pages legales publiques (RGPD + TOS).
+$routes->get('legal/privacy', 'Legal::privacy');
+$routes->get('legal/tos',     'Legal::tos');
+
 service('auth')->routes($routes);
 
 // Routes toujours accessibles (en prison ou a la cyberclinique).
@@ -14,6 +18,10 @@ $routes->group('', ['filter' => 'session'], static function ($routes) {
     $routes->get('profile',         'Profile::index');
     $routes->get('profile/edit',    'Profile::edit');
     $routes->post('profile/save',   'Profile::save');
+    // RGPD : tableau de bord donnees + export JSON + suppression compte.
+    $routes->get('profile/data',    'Profile::data');
+    $routes->get('profile/export',  'Profile::export');
+    $routes->post('profile/delete', 'Profile::delete');
 
     // Passage de niveau (choix explicite, pas de cascade automatique).
     $routes->get('level-up',          'LevelUp::index');

@@ -29,6 +29,7 @@
                     Refaire le tutoriel
                 </button>
                 <a href="/profile/edit" class="text-decoration-none text-muted small">Personnaliser</a>
+                <a href="/profile/data" class="text-decoration-none text-muted small">Mes données</a>
             </span>
         </div>
         <div class="card-body">

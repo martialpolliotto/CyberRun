@@ -123,4 +123,118 @@ class Profile extends BaseController
         $abs = self::AVATARS_DIR . basename($path);
         if (is_file($abs)) @unlink($abs);
     }
+
+    /** RGPD : page tableau de bord des donnees personnelles (export + suppression). */
+    public function data()
+    {
+        $user   = auth()->user();
+        $player = model(PlayerModel::class)->findByUserId($user->id);
+        if ($player === null) {
+            return redirect()->to('/')->with('error', 'Fiche player introuvable.');
+        }
+        return view('profile_data', ['user' => $user, 'player' => $player]);
+    }
+
+    /**
+     * RGPD : export de toutes les donnees du compte au format JSON downloadable.
+     * Inclut user (sans password_hash), player, et toutes les rows liees par player_id.
+     */
+    public function export()
+    {
+        $user   = auth()->user();
+        $player = model(PlayerModel::class)->findByUserId($user->id);
+        if ($player === null) {
+            return redirect()->to('/')->with('error', 'Fiche player introuvable.');
+        }
+
+        $playerId = (int) $player['id'];
+        $userId   = (int) $user->id;
+        $db = db_connect();
+
+        $data = [
+            'export_date' => date('c'),
+            'user' => [
+                'id'         => $userId,
+                'username'   => $user->username,
+                'email'      => $user->email,
+                'created_at' => (string) ($user->created_at ?? ''),
+            ],
+            'player'                 => $player,
+            'player_items'           => $db->table('player_items')->where('player_id', $playerId)->get()->getResultArray(),
+            'player_active_effects'  => $db->table('player_active_effects')->where('player_id', $playerId)->get()->getResultArray(),
+            'player_crime_progress'  => $db->table('player_crime_progress')->where('player_id', $playerId)->get()->getResultArray(),
+            'player_combat_stats'    => $db->table('player_combat_stats')->where('player_id', $playerId)->get()->getResultArray(),
+            'player_missions'        => $db->table('player_missions')->where('player_id', $playerId)->get()->getResultArray(),
+            'player_relations'       => $db->table('player_relations')->where('player_id', $playerId)->get()->getResultArray(),
+            'player_mutes'           => $db->table('player_mutes')->where('player_id', $playerId)->get()->getResultArray(),
+            'player_achievements'    => $db->table('player_achievements')->where('player_id', $playerId)->get()->getResultArray(),
+            'daily_assignments'      => $db->table('daily_assignments')->where('player_id', $playerId)->get()->getResultArray(),
+            'bank_deposits'          => $db->table('bank_deposits')->where('player_id', $playerId)->get()->getResultArray(),
+            'bazaar_listings'        => $db->table('bazaar_listings')->where('seller_player_id', $playerId)->get()->getResultArray(),
+            'messages_sent'          => $db->table('messages')->where('sender_player_id',    $playerId)->get()->getResultArray(),
+            'messages_received'      => $db->table('messages')->where('recipient_player_id', $playerId)->get()->getResultArray(),
+            'chat_messages_sent'     => $db->table('chat_messages')->where('sender_player_id', $playerId)->get()->getResultArray(),
+            'combats_as_attacker'    => $db->table('combats')->where('attacker_player_id', $playerId)->get()->getResultArray(),
+            'combats_as_defender'    => $db->table('combats')->where('defender_player_id', $playerId)->get()->getResultArray(),
+            'bounties_placed'        => $db->table('bounties')->where('placer_player_id', $playerId)->get()->getResultArray(),
+            'bounties_on_me'         => $db->table('bounties')->where('target_player_id', $playerId)->get()->getResultArray(),
+            'spy_attempts_done'      => $db->table('spy_attempts')->where('spy_player_id',    $playerId)->get()->getResultArray(),
+            'spy_attempts_on_me'     => $db->table('spy_attempts')->where('target_player_id', $playerId)->get()->getResultArray(),
+            'faction_memberships'    => $db->table('faction_members')->where('player_id', $playerId)->get()->getResultArray(),
+            'faction_applications'   => $db->table('faction_applications')->where('player_id', $playerId)->get()->getResultArray(),
+            'activity_logs'          => $db->table('activity_logs')->where('player_id', $playerId)->get()->getResultArray(),
+        ];
+
+        $filename = 'cyberrun-export-' . $user->username . '-' . date('Ymd-His') . '.json';
+        return $this->response
+            ->setHeader('Content-Type', 'application/json; charset=utf-8')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setBody(json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    }
+
+    /**
+     * RGPD : suppression definitive du compte.
+     * Confirmation par password + saisie du mot 'SUPPRIMER'.
+     * Hard delete via Shield (cascade DB couvre toutes les tables liees).
+     */
+    public function delete()
+    {
+        $user   = auth()->user();
+        $player = model(PlayerModel::class)->findByUserId($user->id);
+        if ($player === null) {
+            return redirect()->to('/')->with('error', 'Fiche player introuvable.');
+        }
+
+        $confirm  = trim((string) $this->request->getPost('confirm'));
+        $password = (string) $this->request->getPost('password');
+
+        if ($confirm !== 'SUPPRIMER') {
+            return redirect()->to('/profile/data')->with('error', 'Saisis exactement le mot SUPPRIMER pour confirmer.');
+        }
+
+        // Verification mot de passe via Shield.
+        $check = auth()->check([
+            'email'    => $user->email,
+            'password' => $password,
+        ]);
+        if (! $check->isOK()) {
+            return redirect()->to('/profile/data')->with('error', 'Mot de passe incorrect.');
+        }
+
+        // Supprime l'avatar physique avant le delete user.
+        if (! empty($player['avatar_path'])) {
+            $this->deleteAvatarFile($player['avatar_path']);
+        }
+
+        // Hard delete user Shield -> CASCADE supprime player + toutes les rows
+        // liees par FK (combats, messages, etc., toutes en ON DELETE CASCADE).
+        $userId = (int) $user->id;
+        $userProvider = service('users');
+        $userProvider->delete($userId, true); // true = hard delete
+
+        // Logout (clean session) + redirect home.
+        auth()->logout();
+
+        return redirect()->to('/')->with('message', 'Ton compte a ete supprime. Toutes tes donnees ont ete effacees.');
+    }
 }

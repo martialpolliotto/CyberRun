@@ -135,7 +135,9 @@
 
 <footer class="border-top mt-5 bg-light">
     <div class="container py-3 text-center small text-muted">
-        © 2026 CyberRun — projet en cours de construction
+        © 2026 CyberRun — projet en cours de construction ·
+        <a href="/legal/privacy" class="text-muted">Confidentialité</a> ·
+        <a href="/legal/tos" class="text-muted">CGU</a>
     </div>
 </footer>
 
