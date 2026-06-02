@@ -53,6 +53,7 @@ $navItems = [
     ['Bazaar',      '/bazaar/mine',  'bi-cash-coin',       null],
     ['Joueurs',     '/players',      'bi-people',          null],
     ['Classements', '/leaderboards', 'bi-trophy',          null],
+    ['Wiki',        '/wiki',         'bi-book',            null],
 ];
 ?>
 <aside class="cr-sidebar bg-white border-end" style="width: 280px; flex-shrink: 0;">
