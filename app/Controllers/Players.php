@@ -24,8 +24,23 @@ class Players extends BaseController
         return redirect()->to('/players/jail')->with($result['ok'] ? 'message' : 'error', $result['message']);
     }
 
-    /** Stubs pour features a venir : espionnage de stats. */
-    public function stubSpy(int $targetPlayerId)     { return $this->stubRedirect($targetPlayerId, 'Espionnage de stats à venir.'); }
+    /** Espionnage : debit nerve, retourne les 4 stats combat cachees (cache N min). */
+    public function spy(int $targetPlayerId)
+    {
+        $me = model(PlayerModel::class)->findByUserId((int) auth()->user()->id);
+        if ($me === null) {
+            return redirect()->to('/')->with('error', 'Fiche player introuvable.');
+        }
+        $r = model(PlayerModel::class)->spy((int) $me['id'], $targetPlayerId);
+        // Trouve le username pour redirect.
+        $row = db_connect()->table('players p')
+            ->select('users.username')
+            ->join('users', 'users.id = p.user_id', 'inner')
+            ->where('p.id', $targetPlayerId)
+            ->get()->getRowArray();
+        $url = ! empty($row['username']) ? '/u/' . $row['username'] : '/players';
+        return redirect()->to($url)->with($r['ok'] ? 'message' : 'error', $r['message']);
+    }
 
     private function stubRedirect(int $targetPlayerId, string $message)
     {
@@ -115,6 +130,12 @@ class Players extends BaseController
             $player['_bust_pct']  = $pm->estimateBustPct($me, $target);
         }
 
+        // Cache espionnage : si j'ai un spy_attempt non expire sur cette cible, affiche les stats.
+        $spyCache = null;
+        if ($me !== null && (int) $me['id'] !== (int) $player['id']) {
+            $spyCache = model(\App\Models\SpyAttemptModel::class)->findActive((int) $me['id'], (int) $player['id']);
+        }
+
         return view('players/show', [
             'profile'           => $player,
             'me'                => $me,
@@ -122,6 +143,8 @@ class Players extends BaseController
             'active_bounties'   => model(\App\Models\BountyModel::class)->activeOnTarget((int) $player['id']),
             'bazaar_listings'   => model(\App\Models\BazaarListingModel::class)->listForSeller((int) $player['id']),
             'bazaar_fee_pct'    => (int) model(\App\Models\GameSettingModel::class)->get('bazaar_fee_pct', 5),
+            'spy_cache'         => $spyCache,
+            'spy_nerve_cost'    => (int) model(\App\Models\GameSettingModel::class)->get('spy_nerve_cost', 50),
         ]);
     }
 }

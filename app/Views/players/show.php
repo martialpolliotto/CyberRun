@@ -56,9 +56,10 @@
                     <a href="/messages/thread/<?= $targetId ?>" class="btn btn-outline-dark btn-sm" title="Envoyer un message">✉ Msg</a>
                     <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#modal-transfer" title="Envoyer des crédits">¢ Argent</button>
                     <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#modal-bounty" title="Placer une prime">☠ Prime</button>
-                    <form method="post" action="/spy/<?= $targetId ?>" class="m-0">
+                    <form method="post" action="/spy/<?= $targetId ?>" class="m-0"
+                          onsubmit="return confirm('Espionner pour <?= (int) $spy_nerve_cost ?> nerve ? (résultat caché 1h)');">
                         <?= csrf_field() ?>
-                        <button type="submit" class="btn btn-outline-dark btn-sm" title="Espionner ses stats">◉ Espion</button>
+                        <button type="submit" class="btn btn-outline-dark btn-sm" title="Espionner ses stats (−<?= (int) $spy_nerve_cost ?> nerve)">◉ Espion</button>
                     </form>
 
                     <span class="vr"></span>
@@ -111,7 +112,33 @@
                     </div>
                 <?php endforeach ?>
             </div>
-            <p class="form-text text-center mt-3 mb-0">Les stats brutes (Force / Blindage / Réflexes / Hack) sont privées. Utilise <strong>Espion</strong> pour les obtenir (à venir).</p>
+            <?php if ($spy_cache !== null): ?>
+                <hr>
+                <div class="small text-uppercase fw-semibold text-muted mb-2">
+                    <i class="bi bi-eye"></i> Renseignements espionnés
+                    <span class="text-muted text-lowercase fw-normal">
+                        — expire à <?= esc(substr((string) $spy_cache['expires_at'], 11, 5)) ?>
+                    </span>
+                </div>
+                <div class="row g-3">
+                    <?php
+                        $spyCells = [
+                            'Force'    => (int) $spy_cache['stat_force'],
+                            'Blindage' => (int) $spy_cache['stat_blindage'],
+                            'Réflexes' => (int) $spy_cache['stat_reflexes'],
+                            'Hack'     => (int) $spy_cache['stat_hack'],
+                        ];
+                    ?>
+                    <?php foreach ($spyCells as $label => $value): ?>
+                        <div class="col-6 col-md-3">
+                            <div class="small text-muted text-uppercase"><?= esc($label) ?></div>
+                            <div class="fs-4 fw-bold font-monospace"><?= number_format($value) ?></div>
+                        </div>
+                    <?php endforeach ?>
+                </div>
+            <?php else: ?>
+                <p class="form-text text-center mt-3 mb-0">Les stats brutes (Force / Blindage / Réflexes / Hack) sont privées. Utilise <strong>Espion</strong> (coût : <?= (int) $spy_nerve_cost ?> nerve, cache 1h).</p>
+            <?php endif ?>
         </div>
     </div>
 

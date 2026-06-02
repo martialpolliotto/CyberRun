@@ -403,6 +403,88 @@ class PlayerModel extends Model
     }
 
     /**
+     * Espionne la cible : debite nerve (atomique) et retourne ses 4 stats combat.
+     * Si une attempt non expiree existe deja pour cette paire, retourne le cache
+     * sans nouveau debit.
+     *
+     * @return array{ok: bool, message: string, snapshot?: array, cached?: bool}
+     */
+    public function spy(int $spyId, int $targetId): array
+    {
+        if ($spyId === $targetId) {
+            return ['ok' => false, 'message' => 'Tu ne peux pas t\'espionner toi-meme.'];
+        }
+        $target = $this->find($targetId);
+        if ($target === null) {
+            return ['ok' => false, 'message' => 'Cible introuvable.'];
+        }
+
+        $spyModel = model(\App\Models\SpyAttemptModel::class);
+        $cached   = $spyModel->findActive($spyId, $targetId);
+        if ($cached !== null) {
+            return [
+                'ok'       => true,
+                'message'  => 'Renseignements deja en memoire.',
+                'cached'   => true,
+                'snapshot' => [
+                    'force'    => (int) $cached['stat_force'],
+                    'blindage' => (int) $cached['stat_blindage'],
+                    'reflexes' => (int) $cached['stat_reflexes'],
+                    'hack'     => (int) $cached['stat_hack'],
+                    'expires_at' => $cached['expires_at'],
+                ],
+            ];
+        }
+
+        $settings  = model(GameSettingModel::class);
+        $nerveCost = (int) $settings->get('spy_nerve_cost',    50);
+        $cacheMin  = (int) $settings->get('spy_cache_minutes', 60);
+
+        $db = db_connect();
+        $db->transStart();
+
+        // Debit nerve atomique : guard nerve_current >= cost.
+        $this->builder()
+            ->where('id', $spyId)
+            ->where('nerve_current >=', $nerveCost)
+            ->update([
+                'nerve_current' => new \CodeIgniter\Database\RawSql('nerve_current - ' . $nerveCost),
+                'updated_at'    => date('Y-m-d H:i:s'),
+            ]);
+        if ($db->affectedRows() === 0) {
+            $db->transRollback();
+            return ['ok' => false, 'message' => 'Pas assez de nerve (cout : ' . $nerveCost . ').'];
+        }
+
+        $now = \CodeIgniter\I18n\Time::now();
+        $spyModel->insert([
+            'spy_player_id'    => $spyId,
+            'target_player_id' => $targetId,
+            'stat_force'       => (int) $target['stat_force'],
+            'stat_blindage'    => (int) $target['stat_blindage'],
+            'stat_reflexes'    => (int) $target['stat_reflexes'],
+            'stat_hack'        => (int) $target['stat_hack'],
+            'created_at'       => $now->toDateTimeString(),
+            'expires_at'       => $now->addMinutes($cacheMin)->toDateTimeString(),
+        ]);
+
+        $db->transComplete();
+
+        return [
+            'ok'       => true,
+            'message'  => 'Stats revelees (cout : ' . $nerveCost . ' nerve).',
+            'cached'   => false,
+            'snapshot' => [
+                'force'      => (int) $target['stat_force'],
+                'blindage'   => (int) $target['stat_blindage'],
+                'reflexes'   => (int) $target['stat_reflexes'],
+                'hack'       => (int) $target['stat_hack'],
+                'expires_at' => $now->addMinutes($cacheMin)->toDateTimeString(),
+            ],
+        ];
+    }
+
+    /**
      * Enregistre une connexion quotidienne et applique le bonus streak.
      * - 1ere connexion du jour : streak +1 (ou reset a 1 si > 1 jour ecoule), reward credite
      * - Autres appels du meme jour : no-op, retourne ['credited' => false]

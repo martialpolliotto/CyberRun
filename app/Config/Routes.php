@@ -64,7 +64,7 @@ $routes->group('', ['filter' => ['session', 'free']], static function ($routes) 
     $routes->post('messages/send',                 'Messages::send');
 
     // Stubs : espionnage (a brancher dans les phases suivantes).
-    $routes->post('spy/(:num)',  'Players::stubSpy/$1');
+    $routes->post('spy/(:num)',  'Players::spy/$1');
 
     // Combat : start (depuis profil), view, turn, post-action (mug/hospitalize/leave).
     $routes->post('attack/(:num)',                       'Combat::start/$1');
