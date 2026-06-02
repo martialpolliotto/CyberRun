@@ -27,6 +27,7 @@ class Factions extends BaseController
     public function index()
     {
         $me = $this->me();
+        if ($me !== null) model(\App\Models\MissionModel::class)->trackEvent((int) $me['id'], 'visit_page', 'factions');
         return view('factions/index', [
             'me'                => $me,
             'factions'          => model(FactionModel::class)->listAll(100),

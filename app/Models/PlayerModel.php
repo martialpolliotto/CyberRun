@@ -51,6 +51,10 @@ class PlayerModel extends Model
         'faction_id',
         'married_to_player_id',
         'is_donator',
+        'login_streak_days',
+        'last_login_at',
+        'last_streak_reward',
+        'chat_muted_until',
     ];
 
     /** Couts et probas de l'evasion solo depuis la prison. */
@@ -396,6 +400,55 @@ class PlayerModel extends Model
             'gain'    => self::TRAIN_STAT_GAIN,
             'cost'    => self::TRAIN_ENERGY_COST,
         ];
+    }
+
+    /**
+     * Enregistre une connexion quotidienne et applique le bonus streak.
+     * - 1ere connexion du jour : streak +1 (ou reset a 1 si > 1 jour ecoule), reward credite
+     * - Autres appels du meme jour : no-op, retourne ['credited' => false]
+     *
+     * @return array{credited: bool, streak: int, reward: int, broken: bool}
+     */
+    public function recordDailyLogin(int $playerId): array
+    {
+        $player = $this->find($playerId);
+        if ($player === null) {
+            return ['credited' => false, 'streak' => 0, 'reward' => 0, 'broken' => false];
+        }
+
+        $today = date('Y-m-d');
+        $last  = $player['last_login_at'] ?? null;
+
+        if ($last === $today) {
+            // Deja credit aujourd'hui : retourne juste l'etat courant pour affichage.
+            return [
+                'credited' => false,
+                'streak'   => (int) $player['login_streak_days'],
+                'reward'   => (int) $player['last_streak_reward'],
+                'broken'   => false,
+            ];
+        }
+
+        // Hier = streak continue, autre = streak reset a 1.
+        $yesterday = date('Y-m-d', strtotime('-1 day'));
+        $broken    = ($last !== null && $last !== $yesterday);
+        $newStreak = $broken || $last === null ? 1 : ((int) $player['login_streak_days']) + 1;
+
+        $settings = model(GameSettingModel::class);
+        $base     = (int) $settings->get('streak_reward_base',      50);
+        $incr     = (int) $settings->get('streak_reward_increment', 25);
+        $cap      = (int) $settings->get('streak_reward_max',      500);
+        $reward   = min($cap, $base + ($newStreak - 1) * $incr);
+
+        $this->update($playerId, [
+            'login_streak_days'   => $newStreak,
+            'last_login_at'       => $today,
+            'last_streak_reward'  => $reward,
+            'updated_at'          => date('Y-m-d H:i:s'),
+        ]);
+        $this->creditUnconditional($playerId, $reward);
+
+        return ['credited' => true, 'streak' => $newStreak, 'reward' => $reward, 'broken' => $broken];
     }
 
     /**

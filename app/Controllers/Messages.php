@@ -20,6 +20,7 @@ class Messages extends BaseController
         if ($me === null) {
             return redirect()->to('/')->with('error', 'Fiche player introuvable.');
         }
+        model(\App\Models\MissionModel::class)->trackEvent((int) $me['id'], 'visit_page', 'messages');
 
         return view('messages/index', [
             'me'      => $me,

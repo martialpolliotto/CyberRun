@@ -13,6 +13,8 @@ class Wiki extends BaseController
     public function index()
     {
         $service = new WikiService();
+        $me = $this->me();
+        if ($me !== null) model(\App\Models\MissionModel::class)->trackEvent((int) $me['id'], 'visit_page', 'wiki');
         return view('wiki/index', [
             'sections' => $service->listSections(),
         ]);

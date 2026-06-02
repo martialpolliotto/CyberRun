@@ -21,6 +21,7 @@ class Bazaar extends BaseController
     public function mine()
     {
         $me = $this->requireMe();
+        model(\App\Models\MissionModel::class)->trackEvent((int) $me['id'], 'visit_page', 'bazaar');
         $listings   = model(BazaarListingModel::class)->listForSeller((int) $me['id']);
         $inventory  = model(PlayerItemModel::class)->findFullInventory((int) $me['id']);
 

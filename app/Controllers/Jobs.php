@@ -13,6 +13,7 @@ class Jobs extends BaseController
     {
         $jobs = model(JobModel::class)->listAll();
         $me   = model(PlayerModel::class)->findByUserId((int) auth()->user()->id);
+        if ($me !== null) model(\App\Models\MissionModel::class)->trackEvent((int) $me['id'], 'visit_page', 'jobs');
 
         // Pour chaque job, on annexe le 1er salaire (rank 1) pour donner un ordre de grandeur.
         foreach ($jobs as &$j) {

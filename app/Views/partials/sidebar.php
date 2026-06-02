@@ -27,9 +27,18 @@ $unreadMessages = model(\App\Models\MessageModel::class)->unreadCount((int) $pla
 
 $factionsHref = ! empty($player['faction_id']) ? '/factions/mine' : '/factions';
 
+// Compteur dailies claimables (= completed mais pas claimed pour aujourd'hui).
+$claimableDailies = (int) db_connect()->table('daily_assignments')
+    ->where('player_id', (int) $player['id'])
+    ->where('day_date',  date('Y-m-d'))
+    ->where('completed_at IS NOT NULL', null, false)
+    ->where('claimed_at IS NULL',       null, false)
+    ->countAllResults();
+
 $navItems = [
     ['Profil',      '/profile',      'bi-person',          null],
     ['Messages',    '/messages',     'bi-envelope',        $unreadMessages > 0 ? $unreadMessages : null],
+    ['Dailies',     '/dailies',      'bi-calendar-check',  $claimableDailies > 0 ? $claimableDailies : null],
     ['Log',         '/log',          'bi-clock-history',   null],
     ['Crimes',      '/crimes',       'bi-mask',            null],
     ['Lab',         '/lab',          'bi-flask',           null],
@@ -91,6 +100,12 @@ $navItems = [
                 <span class="text-muted" style="width: 5rem;">Niveau</span>
                 <span class="fw-bold font-monospace"><?= (int) $player['level'] ?></span>
             </div>
+            <?php if ((int) $player['login_streak_days'] > 0): ?>
+                <div class="d-flex" title="Connexion <?= (int) $player['login_streak_days'] ?> jours d'affilée">
+                    <span class="text-muted" style="width: 5rem;">Streak</span>
+                    <span class="fw-bold font-monospace text-warning"><i class="bi bi-fire"></i> <?= (int) $player['login_streak_days'] ?> j</span>
+                </div>
+            <?php endif ?>
         </div>
 
         <!-- Jauges ressources : partial reutilise comme cible OOB pour les actions HTMX. -->

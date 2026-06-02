@@ -38,6 +38,31 @@ abstract class BaseController extends Controller
 
         // Caution: Do not edit this line.
         parent::initController($request, $response, $logger);
+
+        // Daily login streak : credite le reward au 1er hit du jour. No-op les autres requetes.
+        $this->maybeTrackDailyLogin();
+    }
+
+    /**
+     * Si user logge + fiche player + pas un bot, appelle PlayerModel::recordDailyLogin
+     * une fois par requete. La methode est elle-meme idempotente par jour (verifie
+     * last_login_at avant de crediter). Set un flash success au 1er crediting.
+     */
+    private function maybeTrackDailyLogin(): void
+    {
+        if (! function_exists('auth') || ! auth()->loggedIn()) return;
+        $me = $this->me();
+        if ($me === null || (int) ($me['is_bot'] ?? 0) === 1) return;
+        // Skip pour les routes HTMX/poll pour ne pas spammer le flash dans des reponses partielles.
+        if ($this->isHtmx()) return;
+
+        $r = model(\App\Models\PlayerModel::class)->recordDailyLogin((int) $me['id']);
+        if ($r['credited']) {
+            $msg = $r['broken']
+                ? 'Bon retour. Streak réinitialisé à 1. Bonus +' . number_format($r['reward']) . '¢.'
+                : 'Connexion jour ' . $r['streak'] . ' — bonus +' . number_format($r['reward']) . '¢.';
+            session()->setFlashdata('message', $msg);
+        }
     }
 
     /** True si la requete vient de htmx (header HX-Request: true). */

@@ -212,6 +212,9 @@ class MissionModel extends Model
             }
             $pmModel->update($pm['id'], $update);
         }
+
+        // Hook dailies : meme event, en parallele des missions principales.
+        (new \App\Services\DailyService())->trackEvent($playerId, $eventType, $target);
     }
 
     /**

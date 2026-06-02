@@ -19,6 +19,7 @@ class Chat extends BaseController
     public function index(?string $channel = null)
     {
         $me = $this->requireMe();
+        model(\App\Models\MissionModel::class)->trackEvent((int) $me['id'], 'visit_page', 'chat');
         $chat = new ChatService();
 
         $channels = $chat->visibleChannels($me);

@@ -85,6 +85,10 @@ $routes->group('', ['filter' => ['session', 'free']], static function ($routes) 
     $routes->post('crimes/attempt/(:num)', 'Crimes::attempt/$1');
     $routes->get('crimes/(:segment)', 'Crimes::show/$1');
 
+    // Dailies (3 defis quotidiens rotatifs).
+    $routes->get('dailies',                           'Dailies::index');
+    $routes->post('dailies/(:num)/claim',             'Dailies::claim/$1');
+
     // Wiki gameplay (read-only, source = docs/GAMEPLAY.md).
     $routes->get('wiki',                              'Wiki::index');
     $routes->get('wiki/(:segment)',                   'Wiki::show/$1');
