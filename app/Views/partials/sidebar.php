@@ -46,24 +46,26 @@ $maturedDeposits = (int) db_connect()->table('bank_deposits')
     ->where('matures_at <=', date('Y-m-d H:i:s'))
     ->countAllResults();
 
+// Ordre : Chrome City epingle en haut, puis alphabetique. Admin reste en bas
+// dans son propre bloc (en dehors de cette liste).
 $navItems = [
-    ['Profil',      '/profile',      'bi-person',          null,                                              'profile'],
-    ['Messages',    '/messages',     'bi-envelope',        $unreadMessages > 0 ? $unreadMessages : null,      null],
-    ['Dailies',     '/dailies',      'bi-calendar-check',  $claimableDailies > 0 ? $claimableDailies : null,  'dailies'],
-    ['Log',         '/log',          'bi-clock-history',   null,                                              null],
-    ['Crimes',      '/crimes',       'bi-mask',            null,                                              'crimes'],
-    ['Lab',         '/lab',          'bi-flask',           null,                                              'lab'],
     ['Chrome City', '/city',         'bi-building',        null,                                              null],
-    ['Jobs',        '/jobs',         'bi-briefcase',       null,                                              'jobs'],
+    ['Banque',      '/bank',         'bi-bank',            $maturedDeposits > 0 ? $maturedDeposits : null,    null],
+    ['Bazaar',      '/bazaar/mine',  'bi-cash-coin',       null,                                              'bazaar'],
+    ['Classements', '/leaderboards', 'bi-trophy',          null,                                              null],
+    ['Crimes',      '/crimes',       'bi-mask',            null,                                              'crimes'],
+    ['Dailies',     '/dailies',      'bi-calendar-check',  $claimableDailies > 0 ? $claimableDailies : null,  'dailies'],
+    ['Équipement',  '/equipment',    'bi-shield',          null,                                              null],
     ['Faction',     $factionsHref,   'bi-shield-fill',     null,                                              'faction'],
     ['Guerres',     '/factions/wars','bi-fire',            null,                                              null],
-    ['Équipement',  '/equipment',    'bi-shield',          null,                                              null],
     ['Inventaire',  '/inventory',    'bi-bag',             null,                                              null],
-    ['Bazaar',      '/bazaar/mine',  'bi-cash-coin',       null,                                              'bazaar'],
-    ['Banque',      '/bank',         'bi-bank',            $maturedDeposits > 0 ? $maturedDeposits : null,    null],
+    ['Jobs',        '/jobs',         'bi-briefcase',       null,                                              'jobs'],
     ['Joueurs',     '/players',      'bi-people',          null,                                              null],
+    ['Lab',         '/lab',          'bi-capsule',         null,                                              'lab'],
+    ['Log',         '/log',          'bi-clock-history',   null,                                              null],
+    ['Messages',    '/messages',     'bi-envelope',        $unreadMessages > 0 ? $unreadMessages : null,      null],
+    ['Profil',      '/profile',      'bi-person',          null,                                              'profile'],
     ['Relations',   '/relations',    'bi-person-heart',    $onlineFriends > 0 ? $onlineFriends : null,        null],
-    ['Classements', '/leaderboards', 'bi-trophy',          null,                                              null],
     ['Trophées',    '/achievements', 'bi-award',           null,                                              null],
     ['Wiki',        '/wiki',         'bi-book',            null,                                              'wiki'],
 ];

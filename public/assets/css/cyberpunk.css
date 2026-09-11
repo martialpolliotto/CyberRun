@@ -1,0 +1,420 @@
+/* ============================================================================
+   CyberRun — Skin cyberpunk (sombre + neon).
+   Tout est scope sous [data-theme="cyberpunk"] : en mode "discreet" ce
+   fichier est inerte et l'UI reste celle de Bootstrap blanc par defaut.
+   ============================================================================ */
+
+/* --- Toggle theme button (visible dans les 2 modes) -------------------------- */
+.cr-theme-btn { color: inherit; font-size: 1.1rem; line-height: 1; }
+.cr-theme-btn:hover { opacity: 0.7; }
+/* Affiche la bonne icone selon le theme actif. */
+[data-theme="cyberpunk"] .cr-theme-icon-cyberpunk,
+[data-theme="discreet"]  .cr-theme-icon-discreet { display: inline; }
+[data-theme="cyberpunk"] .cr-theme-icon-discreet,
+[data-theme="discreet"]  .cr-theme-icon-cyberpunk { display: none; }
+
+/* En discreet, les nav-links restent dark Bootstrap. */
+[data-theme="discreet"] .cr-nav-link { color: #212529; }
+
+
+/* ============================================================================
+   CYBERPUNK MODE — tout ce qui suit est scope sous [data-theme="cyberpunk"].
+   ============================================================================ */
+
+[data-theme="cyberpunk"] {
+    /* Palette */
+    --cr-bg:           #1e1e28;   /* fond principal, gris-bleu sombre */
+    --cr-bg-elev:      #282834;   /* surface : cards, header, sidebar */
+    --cr-bg-elev-2:    #32323f;   /* surface niveau 2 : list-group items, dropdowns */
+    --cr-border:       #3d3d4d;   /* bordures subtiles */
+    --cr-border-hi:    #50506a;   /* bordures hover/focus */
+    --cr-text:         #e8e8f2;   /* texte principal */
+    --cr-text-muted:   #9090a8;   /* texte secondaire */
+    --cr-text-dim:     #6a6a82;   /* texte tres discret (timestamps) */
+
+    /* Accents neon */
+    --cr-cyan:         #00e5ff;   /* primary : liens, info, focus */
+    --cr-cyan-dim:     #0099bb;
+    --cr-magenta:      #ff2d95;   /* action : boutons offensifs, alertes */
+    --cr-magenta-dim:  #b3186a;
+    --cr-yellow:       #d4ff00;   /* highlight : XP, money, badges */
+    --cr-green:        #00ff88;   /* success */
+    --cr-red:          #ff3366;   /* danger */
+    --cr-orange:       #ff9933;   /* warning */
+
+    background-color: var(--cr-bg);
+    color: var(--cr-text);
+}
+
+[data-theme="cyberpunk"] body {
+    background-color: var(--cr-bg);
+    color: var(--cr-text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* --- Typographie ------------------------------------------------------------- */
+[data-theme="cyberpunk"] h1,
+[data-theme="cyberpunk"] h2,
+[data-theme="cyberpunk"] h3,
+[data-theme="cyberpunk"] .h1,
+[data-theme="cyberpunk"] .h2,
+[data-theme="cyberpunk"] .h3 {
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 0.02em;
+    color: var(--cr-text);
+}
+[data-theme="cyberpunk"] h4, [data-theme="cyberpunk"] h5, [data-theme="cyberpunk"] h6 {
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 0.04em;
+}
+[data-theme="cyberpunk"] .fw-bold { font-weight: 700; }
+[data-theme="cyberpunk"] .text-uppercase {
+    letter-spacing: 0.1em;
+    font-family: 'Orbitron', sans-serif;
+}
+[data-theme="cyberpunk"] .font-monospace,
+[data-theme="cyberpunk"] code, [data-theme="cyberpunk"] kbd, [data-theme="cyberpunk"] pre {
+    font-family: 'Share Tech Mono', 'Courier New', monospace;
+}
+
+/* Wordmark CyberRun dans le header : effet neon */
+[data-theme="cyberpunk"] header a.fw-bold[href="/"] {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    color: var(--cr-cyan) !important;
+    text-shadow: 0 0 4px rgba(0, 229, 255, 0.6), 0 0 12px rgba(0, 229, 255, 0.3);
+    letter-spacing: 0.08em;
+}
+
+/* --- Texte standards Bootstrap ---------------------------------------------- */
+[data-theme="cyberpunk"] .text-dark   { color: var(--cr-text) !important; }
+[data-theme="cyberpunk"] .text-muted  { color: var(--cr-text-muted) !important; }
+[data-theme="cyberpunk"] .text-body   { color: var(--cr-text) !important; }
+[data-theme="cyberpunk"] .text-success { color: var(--cr-green) !important; }
+[data-theme="cyberpunk"] .text-danger  { color: var(--cr-red) !important; }
+[data-theme="cyberpunk"] .text-warning { color: var(--cr-orange) !important; }
+[data-theme="cyberpunk"] .text-primary { color: var(--cr-cyan) !important; }
+[data-theme="cyberpunk"] .text-info    { color: var(--cr-cyan) !important; }
+
+/* --- Liens ------------------------------------------------------------------ */
+[data-theme="cyberpunk"] a { color: var(--cr-cyan); }
+[data-theme="cyberpunk"] a:hover { color: var(--cr-yellow); }
+[data-theme="cyberpunk"] a.text-dark,
+[data-theme="cyberpunk"] a.text-decoration-none.text-dark { color: var(--cr-text) !important; }
+[data-theme="cyberpunk"] a.text-muted { color: var(--cr-text-muted) !important; }
+[data-theme="cyberpunk"] a.text-muted:hover { color: var(--cr-cyan) !important; }
+[data-theme="cyberpunk"] .cr-nav-link { color: var(--cr-cyan); }
+[data-theme="cyberpunk"] .cr-nav-link:hover { color: var(--cr-yellow); text-shadow: 0 0 6px rgba(212, 255, 0, 0.5); }
+
+/* --- Backgrounds ------------------------------------------------------------ */
+[data-theme="cyberpunk"] .bg-white   { background-color: var(--cr-bg-elev) !important; }
+[data-theme="cyberpunk"] .bg-light   { background-color: var(--cr-bg-elev-2) !important; color: var(--cr-text); }
+[data-theme="cyberpunk"] .bg-body    { background-color: var(--cr-bg) !important; }
+[data-theme="cyberpunk"] .bg-dark    { background-color: #000 !important; }
+[data-theme="cyberpunk"] body.bg-white { background-color: var(--cr-bg) !important; }
+
+/* --- Header ----------------------------------------------------------------- */
+[data-theme="cyberpunk"] header.bg-white {
+    background-color: var(--cr-bg-elev) !important;
+    border-bottom: 1px solid var(--cr-border) !important;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.08);
+}
+
+/* --- Cards ------------------------------------------------------------------ */
+[data-theme="cyberpunk"] .card {
+    background-color: var(--cr-bg-elev);
+    border: 1px solid var(--cr-border);
+    color: var(--cr-text);
+}
+[data-theme="cyberpunk"] .card-header {
+    background-color: var(--cr-bg-elev-2) !important;
+    border-bottom: 1px solid var(--cr-border);
+    color: var(--cr-text);
+}
+[data-theme="cyberpunk"] .card-header.bg-light { background-color: var(--cr-bg-elev-2) !important; }
+[data-theme="cyberpunk"] .card-footer {
+    background-color: var(--cr-bg-elev-2);
+    border-top: 1px solid var(--cr-border);
+}
+
+/* --- Boutons : neon outline + glow au hover --------------------------------- */
+[data-theme="cyberpunk"] .btn { border-radius: 4px; transition: all 0.15s ease; }
+[data-theme="cyberpunk"] .btn-primary {
+    background-color: var(--cr-cyan);
+    border-color: var(--cr-cyan);
+    color: #000;
+    font-weight: 700;
+}
+[data-theme="cyberpunk"] .btn-primary:hover {
+    background-color: var(--cr-yellow);
+    border-color: var(--cr-yellow);
+    color: #000;
+    box-shadow: 0 0 12px rgba(212, 255, 0, 0.6);
+}
+[data-theme="cyberpunk"] .btn-success {
+    background-color: transparent; border-color: var(--cr-green); color: var(--cr-green);
+}
+[data-theme="cyberpunk"] .btn-success:hover {
+    background-color: var(--cr-green); color: #000; box-shadow: 0 0 12px rgba(0, 255, 136, 0.5);
+}
+[data-theme="cyberpunk"] .btn-danger {
+    background-color: transparent; border-color: var(--cr-magenta); color: var(--cr-magenta);
+}
+[data-theme="cyberpunk"] .btn-danger:hover {
+    background-color: var(--cr-magenta); color: #000; box-shadow: 0 0 12px rgba(255, 45, 149, 0.5);
+}
+[data-theme="cyberpunk"] .btn-warning {
+    background-color: transparent; border-color: var(--cr-orange); color: var(--cr-orange);
+}
+[data-theme="cyberpunk"] .btn-warning:hover { background-color: var(--cr-orange); color: #000; }
+[data-theme="cyberpunk"] .btn-outline-dark {
+    color: var(--cr-text); border-color: var(--cr-border-hi);
+}
+[data-theme="cyberpunk"] .btn-outline-dark:hover {
+    background-color: var(--cr-text); color: var(--cr-bg);
+}
+[data-theme="cyberpunk"] .btn-secondary,
+[data-theme="cyberpunk"] .btn-outline-secondary {
+    background-color: transparent; color: var(--cr-text-muted); border-color: var(--cr-border-hi);
+}
+[data-theme="cyberpunk"] .btn-secondary:hover,
+[data-theme="cyberpunk"] .btn-outline-secondary:hover {
+    background-color: var(--cr-bg-elev-2); color: var(--cr-text); border-color: var(--cr-text-muted);
+}
+[data-theme="cyberpunk"] .btn-link { color: var(--cr-cyan); }
+[data-theme="cyberpunk"] .btn-link:hover { color: var(--cr-yellow); }
+[data-theme="cyberpunk"] .btn-link.text-dark { color: var(--cr-text) !important; }
+
+/* --- Forms ------------------------------------------------------------------ */
+[data-theme="cyberpunk"] .form-control,
+[data-theme="cyberpunk"] .form-select {
+    background-color: var(--cr-bg);
+    border: 1px solid var(--cr-border);
+    color: var(--cr-text);
+}
+[data-theme="cyberpunk"] .form-control:focus,
+[data-theme="cyberpunk"] .form-select:focus {
+    background-color: var(--cr-bg);
+    border-color: var(--cr-cyan);
+    color: var(--cr-text);
+    box-shadow: 0 0 0 0.15rem rgba(0, 229, 255, 0.25);
+}
+[data-theme="cyberpunk"] .form-control::placeholder { color: var(--cr-text-dim); }
+[data-theme="cyberpunk"] .form-label { color: var(--cr-text-muted); }
+[data-theme="cyberpunk"] .form-text  { color: var(--cr-text-dim); }
+[data-theme="cyberpunk"] .input-group-text {
+    background-color: var(--cr-bg-elev-2); border-color: var(--cr-border); color: var(--cr-text-muted);
+}
+
+/* --- Tables ----------------------------------------------------------------- */
+[data-theme="cyberpunk"] .table { color: var(--cr-text); border-color: var(--cr-border); }
+[data-theme="cyberpunk"] .table > :not(caption) > * > * {
+    background-color: transparent; color: var(--cr-text); border-bottom-color: var(--cr-border);
+}
+[data-theme="cyberpunk"] .table thead { color: var(--cr-cyan); }
+[data-theme="cyberpunk"] .table thead th { border-bottom: 2px solid var(--cr-cyan-dim); }
+[data-theme="cyberpunk"] .table-hover tbody tr:hover > * { background-color: rgba(0, 229, 255, 0.05); }
+
+/* --- List groups ------------------------------------------------------------ */
+[data-theme="cyberpunk"] .list-group-item {
+    background-color: var(--cr-bg-elev);
+    border-color: var(--cr-border);
+    color: var(--cr-text);
+}
+[data-theme="cyberpunk"] .list-group-flush .list-group-item { background-color: var(--cr-bg-elev); }
+[data-theme="cyberpunk"] .list-group-item.active {
+    background-color: var(--cr-cyan-dim); border-color: var(--cr-cyan); color: var(--cr-text);
+}
+[data-theme="cyberpunk"] .list-group-item-action:hover {
+    background-color: var(--cr-bg-elev-2); color: var(--cr-text);
+}
+
+/* --- Badges ----------------------------------------------------------------- */
+[data-theme="cyberpunk"] .badge { font-family: 'Share Tech Mono', monospace; letter-spacing: 0.05em; }
+[data-theme="cyberpunk"] .badge.bg-primary    { background-color: var(--cr-cyan) !important; color: #000; }
+[data-theme="cyberpunk"] .badge.bg-success    { background-color: var(--cr-green) !important; color: #000; }
+[data-theme="cyberpunk"] .badge.bg-danger     { background-color: var(--cr-magenta) !important; color: #000; }
+[data-theme="cyberpunk"] .badge.bg-warning    { background-color: var(--cr-orange) !important; color: #000; }
+[data-theme="cyberpunk"] .badge.bg-info       { background-color: var(--cr-cyan) !important; color: #000; }
+[data-theme="cyberpunk"] .badge.bg-secondary  { background-color: var(--cr-border-hi) !important; color: var(--cr-text); }
+[data-theme="cyberpunk"] .badge.bg-light      { background-color: var(--cr-bg-elev-2) !important; color: var(--cr-text); }
+[data-theme="cyberpunk"] .badge.bg-dark       { background-color: #000 !important; color: var(--cr-cyan); }
+
+/* --- Alerts ----------------------------------------------------------------- */
+[data-theme="cyberpunk"] .alert-success {
+    background-color: rgba(0, 255, 136, 0.1); border-color: var(--cr-green); color: var(--cr-green);
+}
+[data-theme="cyberpunk"] .alert-danger {
+    background-color: rgba(255, 51, 102, 0.1); border-color: var(--cr-red); color: var(--cr-red);
+}
+[data-theme="cyberpunk"] .alert-warning {
+    background-color: rgba(255, 153, 51, 0.1); border-color: var(--cr-orange); color: var(--cr-orange);
+}
+[data-theme="cyberpunk"] .alert-info,
+[data-theme="cyberpunk"] .alert-primary {
+    background-color: rgba(0, 229, 255, 0.08); border-color: var(--cr-cyan); color: var(--cr-cyan);
+}
+
+/* --- Progress bars : conserve les couleurs deja choisies (hp/energy/etc) ---- */
+[data-theme="cyberpunk"] .progress { background-color: var(--cr-bg-elev-2); }
+[data-theme="cyberpunk"] .progress-bar.cr-bar-life      { box-shadow: 0 0 6px rgba(220, 53, 69, 0.5); }
+[data-theme="cyberpunk"] .progress-bar.cr-bar-energy    { box-shadow: 0 0 6px rgba(25, 135, 84, 0.5); }
+[data-theme="cyberpunk"] .progress-bar.cr-bar-nerve     { box-shadow: 0 0 6px rgba(253, 126, 20, 0.5); }
+[data-theme="cyberpunk"] .progress-bar.cr-bar-xp        { box-shadow: 0 0 6px rgba(13, 202, 240, 0.5); }
+
+/* --- Sidebar ---------------------------------------------------------------- */
+[data-theme="cyberpunk"] .cr-sidebar-desktop,
+[data-theme="cyberpunk"] .offcanvas {
+    background-color: var(--cr-bg-elev);
+    border-right: 1px solid var(--cr-border);
+    color: var(--cr-text);
+}
+[data-theme="cyberpunk"] .cr-sidebar-toggle { color: var(--cr-text-muted); }
+[data-theme="cyberpunk"] .cr-sidebar-toggle:hover { color: var(--cr-cyan); }
+[data-theme="cyberpunk"] .cr-burger { color: var(--cr-text); }
+
+/* --- Footer ----------------------------------------------------------------- */
+.cr-footer { background-color: #f8f9fa; color: #6c757d; }
+.cr-footer a { color: #6c757d; }
+[data-theme="cyberpunk"] .cr-footer {
+    background-color: var(--cr-bg-elev); color: var(--cr-text-muted); border-top-color: var(--cr-border) !important;
+}
+[data-theme="cyberpunk"] .cr-footer a { color: var(--cr-text-muted); }
+[data-theme="cyberpunk"] .cr-footer a:hover { color: var(--cr-cyan); }
+
+/* --- Pagination (cr_full.php) ----------------------------------------------- */
+[data-theme="cyberpunk"] .pagination .page-link {
+    background-color: var(--cr-bg-elev); border-color: var(--cr-border); color: var(--cr-cyan);
+}
+[data-theme="cyberpunk"] .pagination .page-link:hover {
+    background-color: var(--cr-bg-elev-2); border-color: var(--cr-cyan); color: var(--cr-yellow);
+}
+[data-theme="cyberpunk"] .pagination .page-item.active .page-link {
+    background-color: var(--cr-cyan); border-color: var(--cr-cyan); color: #000; font-weight: 700;
+}
+[data-theme="cyberpunk"] .pagination .page-item.disabled .page-link {
+    background-color: var(--cr-bg-elev); border-color: var(--cr-border); color: var(--cr-text-dim);
+}
+
+/* --- Dropdowns -------------------------------------------------------------- */
+[data-theme="cyberpunk"] .dropdown-menu {
+    background-color: var(--cr-bg-elev-2); border: 1px solid var(--cr-border);
+}
+[data-theme="cyberpunk"] .dropdown-item { color: var(--cr-text); }
+[data-theme="cyberpunk"] .dropdown-item:hover,
+[data-theme="cyberpunk"] .dropdown-item:focus {
+    background-color: var(--cr-bg-elev); color: var(--cr-cyan);
+}
+[data-theme="cyberpunk"] .dropdown-divider { border-top-color: var(--cr-border); }
+
+/* --- Modal ----------------------------------------------------------------- */
+[data-theme="cyberpunk"] .modal-content {
+    background-color: var(--cr-bg-elev); border: 1px solid var(--cr-cyan-dim);
+    box-shadow: 0 0 30px rgba(0, 229, 255, 0.15);
+}
+[data-theme="cyberpunk"] .modal-header { border-bottom-color: var(--cr-border); }
+[data-theme="cyberpunk"] .modal-footer { border-top-color: var(--cr-border); }
+[data-theme="cyberpunk"] .btn-close {
+    filter: invert(1) grayscale(100%) brightness(2);
+}
+
+/* --- Borders standards ------------------------------------------------------ */
+[data-theme="cyberpunk"] .border       { border-color: var(--cr-border) !important; }
+[data-theme="cyberpunk"] .border-top    { border-top-color: var(--cr-border) !important; }
+[data-theme="cyberpunk"] .border-bottom { border-bottom-color: var(--cr-border) !important; }
+[data-theme="cyberpunk"] .border-start  { border-left-color: var(--cr-border) !important; }
+[data-theme="cyberpunk"] .border-end    { border-right-color: var(--cr-border) !important; }
+[data-theme="cyberpunk"] hr { border-color: var(--cr-border); opacity: 1; }
+
+/* --- Sticky / shadows ------------------------------------------------------- */
+[data-theme="cyberpunk"] .sticky-top { background-color: var(--cr-bg-elev); }
+[data-theme="cyberpunk"] .shadow-sm  { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important; }
+
+/* --- Chat widget : override des bg blancs hardcodes ------------------------- */
+[data-theme="cyberpunk"] .cr-chat-panel {
+    background: var(--cr-bg-elev) !important;
+    border-color: var(--cr-border) !important;
+    color: var(--cr-text);
+}
+[data-theme="cyberpunk"] .cr-chat-header {
+    background: var(--cr-bg-elev-2) !important;
+    color: var(--cr-text);
+    border-bottom: 1px solid var(--cr-border);
+}
+[data-theme="cyberpunk"] .cr-chat-tabs {
+    background: var(--cr-bg-elev-2);
+    border-bottom-color: var(--cr-border) !important;
+}
+[data-theme="cyberpunk"] .cr-chat-tabs a {
+    color: var(--cr-text-muted) !important;
+    border-right-color: var(--cr-border) !important;
+}
+[data-theme="cyberpunk"] .cr-chat-tabs a.active {
+    color: var(--cr-cyan) !important;
+    background: var(--cr-bg-elev) !important;
+    font-weight: 700;
+}
+[data-theme="cyberpunk"] .cr-chat-tabs a:hover {
+    background: var(--cr-bg-elev) !important;
+    color: var(--cr-yellow) !important;
+}
+[data-theme="cyberpunk"] .cr-chat-list {
+    background: var(--cr-bg-elev) !important;
+    color: var(--cr-text);
+}
+[data-theme="cyberpunk"] .cr-chat-form {
+    background: var(--cr-bg-elev-2);
+    border-top-color: var(--cr-border) !important;
+}
+[data-theme="cyberpunk"] .cr-chat-error {
+    background: rgba(255, 51, 102, 0.15) !important;
+    color: var(--cr-red) !important;
+}
+/* Liens / pseudos / timestamps dans les messages chat. */
+[data-theme="cyberpunk"] .cr-chat-list a { color: var(--cr-cyan); }
+[data-theme="cyberpunk"] .cr-chat-list .text-muted { color: var(--cr-text-dim) !important; }
+
+/* --- Wiki : override des couleurs hardcodees -------------------------------- */
+[data-theme="cyberpunk"] .cr-wiki-content { color: var(--cr-text); }
+[data-theme="cyberpunk"] .cr-wiki-content h3,
+[data-theme="cyberpunk"] .cr-wiki-content h4 { color: var(--cr-cyan) !important; }
+[data-theme="cyberpunk"] .cr-wiki-content a {
+    color: var(--cr-cyan) !important;
+    text-decoration: underline;
+}
+[data-theme="cyberpunk"] .cr-wiki-content a:hover { color: var(--cr-yellow) !important; }
+[data-theme="cyberpunk"] .cr-wiki-content table { color: var(--cr-text); }
+[data-theme="cyberpunk"] .cr-wiki-content table th {
+    background: var(--cr-bg-elev-2) !important;
+    color: var(--cr-text) !important;
+    border-color: var(--cr-border) !important;
+}
+[data-theme="cyberpunk"] .cr-wiki-content table td {
+    border-color: var(--cr-border) !important;
+}
+[data-theme="cyberpunk"] .cr-wiki-content code {
+    background: var(--cr-bg-elev-2) !important;
+    color: var(--cr-yellow) !important;
+}
+[data-theme="cyberpunk"] .cr-wiki-content pre {
+    background: #000 !important;
+    color: var(--cr-cyan) !important;
+    border: 1px solid var(--cr-border);
+}
+[data-theme="cyberpunk"] .cr-wiki-content pre code { color: var(--cr-cyan) !important; }
+[data-theme="cyberpunk"] .cr-wiki-content blockquote {
+    border-left-color: var(--cr-cyan-dim) !important;
+    color: var(--cr-text-muted) !important;
+}
+[data-theme="cyberpunk"] .cr-wiki-content hr { border-color: var(--cr-border); }
+/* Liens nav prev/next + breadcrumb du wiki (hors .cr-wiki-content). */
+[data-theme="cyberpunk"] article a.text-dark { color: var(--cr-text) !important; }
+[data-theme="cyberpunk"] article a.text-dark:hover { color: var(--cr-cyan) !important; }
+
+/* --- Chiffres en monospace : Solde, niveau, etc. ---------------------------- */
+[data-theme="cyberpunk"] .fs-3.fw-bold,
+[data-theme="cyberpunk"] .fs-4.fw-bold {
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--cr-yellow);
+    text-shadow: 0 0 8px rgba(212, 255, 0, 0.3);
+}

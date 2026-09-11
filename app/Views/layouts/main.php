@@ -5,15 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= esc($title ?? 'CyberRun') ?></title>
 
+    <script>
+        // Applique les prefs visuelles AVANT le rendu pour eviter le flash (FOUC).
+        // Theme : 'cyberpunk' (defaut, sombre + neon) ou 'discreet' (clair, mode taf).
+        (function(){
+            var t = localStorage.getItem('crTheme') || 'cyberpunk';
+            document.documentElement.setAttribute('data-theme', t);
+            if (localStorage.getItem('crSidebarCollapsed') === '1') document.documentElement.classList.add('cr-sidebar-collapsed');
+        })();
+    </script>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="<?= base_url('assets/css/cyberpunk.css') ?>" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
     <script src="https://unpkg.com/htmx.org@2.0.3" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
-    <script>
-        // Applique la pref sidebar AVANT le rendu pour eviter le flash (FOUC).
-        (function(){ if (localStorage.getItem('crSidebarCollapsed') === '1') document.documentElement.classList.add('cr-sidebar-collapsed'); })();
-    </script>
     <style>
         [x-cloak] { display: none !important; }
         /* Le burger ne s'affiche que sur mobile (la sidebar est inline sur desktop via offcanvas-lg). */
@@ -98,10 +108,16 @@
             <a href="/" class="fs-5 fw-bold text-dark text-decoration-none">CyberRun</a>
         </div>
 
-        <nav class="small">
+        <nav class="small d-flex align-items-center gap-3">
+            <!-- Toggle theme : cyberpunk (sombre/neon) <-> discreet (clair/Bootstrap). Visible partout. -->
+            <button type="button" id="cr-theme-toggle" class="btn btn-link p-0 text-decoration-none cr-theme-btn"
+                    aria-label="Basculer le theme" title="Basculer le theme">
+                <i class="bi cr-theme-icon-cyberpunk bi-moon-stars-fill"></i>
+                <i class="bi cr-theme-icon-discreet bi-sun-fill"></i>
+            </button>
             <?php if (! $isLogged): ?>
-                <a href="/login" class="text-dark text-decoration-none me-3">Connexion</a>
-                <a href="/register" class="text-dark text-decoration-none fw-bold">Inscription</a>
+                <a href="/login" class="cr-nav-link text-decoration-none">Connexion</a>
+                <a href="/register" class="cr-nav-link text-decoration-none fw-bold">Inscription</a>
             <?php endif ?>
         </nav>
     </div>
@@ -133,13 +149,27 @@
     </main>
 </div>
 
-<footer class="border-top mt-5 bg-light">
-    <div class="container py-3 text-center small text-muted">
+<footer class="cr-footer border-top mt-5">
+    <div class="container py-3 text-center small">
         © 2026 CyberRun — projet en cours de construction ·
-        <a href="/legal/privacy" class="text-muted">Confidentialité</a> ·
-        <a href="/legal/tos" class="text-muted">CGU</a>
+        <a href="/legal/privacy">Confidentialité</a> ·
+        <a href="/legal/tos">CGU</a>
     </div>
 </footer>
+
+<!-- Theme toggle : dispo pour tous (connecte ou non). -->
+<script>
+    (function(){
+        const btn = document.getElementById('cr-theme-toggle');
+        if (! btn) return;
+        btn.addEventListener('click', () => {
+            const curr = document.documentElement.getAttribute('data-theme') || 'cyberpunk';
+            const next = curr === 'cyberpunk' ? 'discreet' : 'cyberpunk';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('crTheme', next);
+        });
+    })();
+</script>
 
 <?php if ($isLogged): ?>
     <?= view('partials/admin_bar') ?>

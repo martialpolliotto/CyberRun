@@ -22,7 +22,7 @@ $defaultChannel = $channels[0]['key'] ?? 'global';
 <style>
 [x-cloak] { display: none !important; }
 .cr-chat-toolbar {
-    position: fixed; bottom: 0; right: 1rem; z-index: 1050;
+    position: fixed; bottom: 0; right: 4rem; z-index: 1050;
     display: flex; gap: 2px;
 }
 .cr-chat-toolbar .cr-chat-icon {
@@ -41,7 +41,7 @@ $defaultChannel = $channels[0]['key'] ?? 'global';
 }
 
 .cr-chat-panel {
-    position: fixed; bottom: 38px; right: 1rem; z-index: 1049;
+    position: fixed; bottom: 38px; right: 4rem; z-index: 1049;
     width: 24rem; max-width: calc(100vw - 2rem); height: 28rem;
     background: #fff; border: 1px solid #212529;
     display: flex; flex-direction: column;
